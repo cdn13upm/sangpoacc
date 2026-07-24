@@ -321,13 +321,18 @@ export default function SuppliersPage() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', width: '100%', maxWidth: '760px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '1.5rem' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '1rem', width: '100%', maxWidth: '840px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid rgba(120,0,0,0.08)', maxHeight: 'calc(100vh - 3rem)', overflowY: 'auto' }}>
+            <div style={{ padding: '1.6rem 1.75rem 1rem', borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(180deg, #fff7f7 0%, #ffffff 100%)' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem', marginTop: 0 }}>
               {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
             </h2>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
+              Fill in supplier details, awarded contract, and work scope.
+            </p>
+            </div>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 1.75rem 1.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem 1.1rem' }}>
                 <FormField label="Supplier Name">
                   <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required style={inputStyle} />
                 </FormField>
@@ -360,11 +365,11 @@ export default function SuppliersPage() {
                 <textarea rows={3} value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} style={textareaStyle} />
               </FormField>
               {formError && <p style={{ color: '#dc2626', fontSize: '0.9rem', margin: 0 }}>{formError}</p>}
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={resetForm} style={{ padding: '0.7rem 1.4rem', borderRadius: '0.5rem', border: '2px solid #e5e7eb', backgroundColor: 'white', color: '#374151', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.25rem', borderTop: '1px solid #f1f5f9' }}>
+                <button type="button" onClick={resetForm} style={{ padding: '0.75rem 1.35rem', borderRadius: '0.65rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#374151', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600' }}>
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} style={{ backgroundColor: '#780000', color: 'white', padding: '0.7rem 1.4rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600', opacity: saving ? 0.7 : 1 }}>
+                <button type="submit" disabled={saving} style={{ backgroundColor: '#780000', color: 'white', padding: '0.75rem 1.4rem', borderRadius: '0.65rem', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700', opacity: saving ? 0.7 : 1, boxShadow: '0 10px 20px -10px rgba(120,0,0,0.55)' }}>
                   {saving ? 'Saving...' : 'Save Supplier'}
                 </button>
               </div>
@@ -399,8 +404,8 @@ function BodyCell({ children }: { children: ReactNode }) {
 
 function FormField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
+    <div style={{ minWidth: 0 }}>
+      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#374151', marginBottom: '0.45rem' }}>{label}</label>
       {children}
     </div>
   );
@@ -408,15 +413,20 @@ function FormField({ label, children }: { label: string; children: ReactNode }) 
 
 const inputStyle: CSSProperties = {
   width: '100%',
+  boxSizing: 'border-box',
   padding: '0.75rem 1rem',
-  border: '2px solid #e5e7eb',
-  borderRadius: '0.5rem',
-  fontSize: '1rem',
+  border: '1px solid #d1d5db',
+  borderRadius: '0.7rem',
+  fontSize: '0.98rem',
   outline: 'none',
+  backgroundColor: '#ffffff',
+  color: '#111827',
+  boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.03)',
 };
 
 const textareaStyle: CSSProperties = {
   ...inputStyle,
   resize: 'vertical',
   fontFamily: 'inherit',
+  lineHeight: 1.5,
 };
