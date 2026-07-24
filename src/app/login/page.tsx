@@ -104,6 +104,11 @@ export default function Login() {
           >
             {loading ? "Loading..." : "Login"}
           </button>
+          <p style={{ textAlign: "center", marginTop: "1rem" }}>
+            <a href="/register" style={{ color: "#2563eb", textDecoration: "none" }}>
+              Register User
+            </a>
+          </p>
         </form>
       </div>
     </div>
