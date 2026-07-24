@@ -79,7 +79,7 @@ export default async function Dashboard() {
           .from('Sangpo_Supplier')
           .select('id, name, contract_award_value, scope_of_work')
           .eq('company_id', companyId)
-          .order('created_at', { ascending: true })
+          .order('name', { ascending: true })
       : Promise.resolve({ data: [] }),
     companyId
       ? supabase.from('Sangpo_Milestone').select('supplier_id, approved_invoice_total').eq('company_id', companyId)
@@ -118,7 +118,7 @@ export default async function Dashboard() {
       voPercent,
       scope: supplier.scope_of_work || 'Scope not added yet',
     };
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   const totalAwarded = supplierCards.reduce((sum, item) => sum + item.awarded, 0);
   const totalApproved = supplierCards.reduce((sum, item) => sum + item.approved, 0);
