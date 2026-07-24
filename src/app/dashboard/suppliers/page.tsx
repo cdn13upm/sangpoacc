@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 type Supplier = {
   id: string;
@@ -24,7 +24,7 @@ export default function SuppliersPage() {
     address: ''
   });
 
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     async function init() {
