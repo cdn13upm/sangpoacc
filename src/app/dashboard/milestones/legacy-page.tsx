@@ -13,6 +13,7 @@ import {
   panelStyle,
   panelTitleStyle,
   primaryButtonStyle,
+  secondaryButtonStyle,
   sectionSubtitleStyle,
   sectionTitleStyle,
   summaryCardStyle,
@@ -51,7 +52,27 @@ type VariationOrder = {
   Sangpo_Supplier?: { name: string } | { name: string }[] | null;
 };
 
-const emptyMilestoneForm = {
+type MilestoneFormState = {
+  supplier_id: string;
+  title: string;
+  description: string;
+  milestone_amount: string;
+  approved_invoice_total: string;
+  manual_paid_total: string;
+  sort_order: string;
+  status: string;
+};
+
+type VoFormState = {
+  supplier_id: string;
+  milestone_id: string;
+  vo_number: string;
+  description: string;
+  amount: string;
+  status: string;
+};
+
+const emptyMilestoneForm: MilestoneFormState = {
   supplier_id: '',
   title: '',
   description: '',
@@ -62,7 +83,7 @@ const emptyMilestoneForm = {
   status: 'draft',
 };
 
-const emptyVoForm = {
+const emptyVoForm: VoFormState = {
   supplier_id: '',
   milestone_id: '',
   vo_number: '',
@@ -95,8 +116,10 @@ export default function LegacyMilestonesPage() {
   const [savingMilestone, setSavingMilestone] = useState(false);
   const [savingVo, setSavingVo] = useState(false);
   const [error, setError] = useState('');
-  const [milestoneForm, setMilestoneForm] = useState(emptyMilestoneForm);
-  const [voForm, setVoForm] = useState(emptyVoForm);
+  const [milestoneForm, setMilestoneForm] = useState<MilestoneFormState>(emptyMilestoneForm);
+  const [voForm, setVoForm] = useState<VoFormState>(emptyVoForm);
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [editingVoId, setEditingVoId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -122,20 +145,7 @@ export default function LegacyMilestonesPage() {
           .order('name');
 
         setSuppliers((supplierRows || []) as SupplierOption[]);
-
-        const [milestoneResponse, voResponse] = await Promise.all([
-          fetch('/api/milestones'),
-          fetch('/api/variation-orders'),
-        ]);
-
-        const milestoneResult = await milestoneResponse.json();
-        const voResult = await voResponse.json();
-
-        if (!milestoneResponse.ok) throw new Error(milestoneResult.error || 'Failed to load milestones');
-        if (!voResponse.ok) throw new Error(voResult.error || 'Failed to load variation orders');
-
-        setMilestones(milestoneResult.milestones || []);
-        setVariationOrders(voResult.variationOrders || []);
+        await reloadMilestones();
       } catch (loadError: any) {
         setError(loadError.message || 'Failed to load milestones');
       } finally {
@@ -159,6 +169,42 @@ export default function LegacyMilestonesPage() {
     setVariationOrders(voResult.variationOrders || []);
   }
 
+  function resetMilestoneForm() {
+    setMilestoneForm(emptyMilestoneForm);
+    setEditingMilestoneId(null);
+  }
+
+  function resetVoForm() {
+    setVoForm(emptyVoForm);
+    setEditingVoId(null);
+  }
+
+  function startMilestoneEdit(milestone: Milestone) {
+    setEditingMilestoneId(milestone.id);
+    setMilestoneForm({
+      supplier_id: milestone.supplier_id || '',
+      title: milestone.title || '',
+      description: milestone.description || '',
+      milestone_amount: String(milestone.milestone_amount || 0),
+      approved_invoice_total: String(milestone.approved_invoice_total || 0),
+      manual_paid_total: String(milestone.manual_paid_total || 0),
+      sort_order: String(milestone.sort_order || 0),
+      status: milestone.status || 'draft',
+    });
+  }
+
+  function startVoEdit(item: VariationOrder) {
+    setEditingVoId(item.id);
+    setVoForm({
+      supplier_id: item.supplier_id || '',
+      milestone_id: item.milestone_id || '',
+      vo_number: item.vo_number || '',
+      description: item.description || '',
+      amount: String(item.amount || 0),
+      status: item.status || 'draft',
+    });
+  }
+
   async function handleMilestoneSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSavingMilestone(true);
@@ -166,14 +212,16 @@ export default function LegacyMilestonesPage() {
 
     try {
       const response = await fetch('/api/milestones', {
-        method: 'POST',
+        method: editingMilestoneId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(milestoneForm),
+        body: JSON.stringify(
+          editingMilestoneId ? { id: editingMilestoneId, ...milestoneForm } : milestoneForm
+        ),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Failed to save milestone');
 
-      setMilestoneForm(emptyMilestoneForm);
+      resetMilestoneForm();
       await reloadMilestones();
     } catch (saveError: any) {
       setError(saveError.message || 'Failed to save milestone');
@@ -189,19 +237,61 @@ export default function LegacyMilestonesPage() {
 
     try {
       const response = await fetch('/api/variation-orders', {
-        method: 'POST',
+        method: editingVoId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(voForm),
+        body: JSON.stringify(editingVoId ? { id: editingVoId, ...voForm } : voForm),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Failed to save variation order');
 
-      setVoForm(emptyVoForm);
+      resetVoForm();
       await reloadMilestones();
     } catch (saveError: any) {
       setError(saveError.message || 'Failed to save variation order');
     } finally {
       setSavingVo(false);
+    }
+  }
+
+  async function handleMilestoneDelete(id: string) {
+    if (!confirm('Delete this milestone?')) return;
+
+    try {
+      const response = await fetch('/api/milestones', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete milestone');
+
+      if (editingMilestoneId === id) {
+        resetMilestoneForm();
+      }
+      await reloadMilestones();
+    } catch (deleteError: any) {
+      setError(deleteError.message || 'Failed to delete milestone');
+    }
+  }
+
+  async function handleVoDelete(id: string) {
+    if (!confirm('Delete this variation order?')) return;
+
+    try {
+      const response = await fetch('/api/variation-orders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete variation order');
+
+      if (editingVoId === id) {
+        resetVoForm();
+      }
+      await reloadMilestones();
+    } catch (deleteError: any) {
+      setError(deleteError.message || 'Failed to delete variation order');
     }
   }
 
@@ -235,7 +325,7 @@ export default function LegacyMilestonesPage() {
 
       {isAdmin && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          <Panel title="Add Milestone">
+          <Panel title={editingMilestoneId ? 'Edit Milestone' : 'Add Milestone'}>
             <form onSubmit={handleMilestoneSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <Field label="Supplier">
                 <select value={milestoneForm.supplier_id} onChange={(e) => setMilestoneForm({ ...milestoneForm, supplier_id: e.target.value })} style={inputStyle}>
@@ -262,16 +352,23 @@ export default function LegacyMilestonesPage() {
               <Field label="Description">
                 <textarea rows={3} value={milestoneForm.description} onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })} style={textareaStyle} />
               </Field>
-              <button type="submit" disabled={savingMilestone} style={primaryButtonStyle}>
-                {savingMilestone ? 'Saving...' : 'Save Milestone'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button type="submit" disabled={savingMilestone} style={{ ...primaryButtonStyle, opacity: savingMilestone ? 0.7 : 1 }}>
+                  {savingMilestone ? 'Saving...' : editingMilestoneId ? 'Update Milestone' : 'Save Milestone'}
+                </button>
+                {editingMilestoneId && (
+                  <button type="button" onClick={resetMilestoneForm} style={secondaryButtonStyle}>
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
             </form>
           </Panel>
 
-          <Panel title="Add Variation Order">
+          <Panel title={editingVoId ? 'Edit Variation Order' : 'Add Variation Order'}>
             <form onSubmit={handleVoSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <Field label="Supplier">
-                <select value={voForm.supplier_id} onChange={(e) => setVoForm({ ...voForm, supplier_id: e.target.value })} style={inputStyle}>
+                <select value={voForm.supplier_id} onChange={(e) => setVoForm({ ...voForm, supplier_id: e.target.value, milestone_id: '' })} style={inputStyle}>
                   <option value="">Select supplier</option>
                   {suppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
@@ -301,9 +398,16 @@ export default function LegacyMilestonesPage() {
               <Field label="Description">
                 <textarea rows={3} value={voForm.description} onChange={(e) => setVoForm({ ...voForm, description: e.target.value })} style={textareaStyle} />
               </Field>
-              <button type="submit" disabled={savingVo} style={primaryButtonStyle}>
-                {savingVo ? 'Saving...' : 'Save VO'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button type="submit" disabled={savingVo} style={{ ...primaryButtonStyle, opacity: savingVo ? 0.7 : 1 }}>
+                  {savingVo ? 'Saving...' : editingVoId ? 'Update VO' : 'Save VO'}
+                </button>
+                {editingVoId && (
+                  <button type="button" onClick={resetVoForm} style={secondaryButtonStyle}>
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
             </form>
           </Panel>
         </div>
@@ -311,7 +415,7 @@ export default function LegacyMilestonesPage() {
 
       <Panel title="Milestone Summary">
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '900px' : '760px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>Supplier</HeaderCell>
@@ -320,12 +424,13 @@ export default function LegacyMilestonesPage() {
                 <HeaderCell>Approved Invoice</HeaderCell>
                 <HeaderCell>Manual Paid</HeaderCell>
                 <HeaderCell>Balance</HeaderCell>
+                {isAdmin && <HeaderCell>Actions</HeaderCell>}
               </tr>
             </thead>
             <tbody>
               {milestones.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
+                  <td colSpan={isAdmin ? 7 : 6} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
                     No milestones yet.
                   </td>
                 </tr>
@@ -340,6 +445,27 @@ export default function LegacyMilestonesPage() {
                       <BodyCell>{formatCurrency(milestone.approved_invoice_total)}</BodyCell>
                       <BodyCell>{formatCurrency(milestone.manual_paid_total)}</BodyCell>
                       <BodyCell>{formatCurrency(balance)}</BodyCell>
+                      {isAdmin && (
+                        <BodyCell>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button type="button" onClick={() => startMilestoneEdit(milestone)} style={secondaryButtonStyle}>
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMilestoneDelete(milestone.id)}
+                              style={{
+                                ...secondaryButtonStyle,
+                                backgroundColor: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                color: '#b91c1c',
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </BodyCell>
+                      )}
                     </tr>
                   );
                 })
@@ -353,7 +479,7 @@ export default function LegacyMilestonesPage() {
 
       <Panel title="Variation Orders">
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '860px' : '700px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>Supplier</HeaderCell>
@@ -361,12 +487,13 @@ export default function LegacyMilestonesPage() {
                 <HeaderCell>Amount</HeaderCell>
                 <HeaderCell>Status</HeaderCell>
                 <HeaderCell>Description</HeaderCell>
+                {isAdmin && <HeaderCell>Actions</HeaderCell>}
               </tr>
             </thead>
             <tbody>
               {variationOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
+                  <td colSpan={isAdmin ? 6 : 5} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
                     No variation orders yet.
                   </td>
                 </tr>
@@ -378,6 +505,27 @@ export default function LegacyMilestonesPage() {
                     <BodyCell>{formatCurrency(item.amount)}</BodyCell>
                     <BodyCell>{item.status}</BodyCell>
                     <BodyCell>{item.description || '-'}</BodyCell>
+                    {isAdmin && (
+                      <BodyCell>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button type="button" onClick={() => startVoEdit(item)} style={secondaryButtonStyle}>
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVoDelete(item.id)}
+                            style={{
+                              ...secondaryButtonStyle,
+                              backgroundColor: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              color: '#b91c1c',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </BodyCell>
+                    )}
                   </tr>
                 ))
               )}

@@ -99,3 +99,81 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Failed to create variation order' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const authorization = await getAuthorizedUser();
+    if ('error' in authorization) {
+      return NextResponse.json({ error: authorization.error }, { status: authorization.status });
+    }
+
+    if (authorization.role !== 'admin') {
+      return NextResponse.json({ error: 'Only admins can update variation orders' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id, supplier_id, milestone_id, vo_number, description, amount, status } = body;
+
+    if (!id || !supplier_id || !vo_number?.trim()) {
+      return NextResponse.json({ error: 'VO id, supplier, and VO number are required' }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('Sangpo_Variation_Order')
+      .update({
+        supplier_id,
+        milestone_id: milestone_id || null,
+        vo_number: vo_number.trim(),
+        description: description?.trim() || null,
+        amount: Number(amount || 0),
+        status: status || 'draft',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('company_id', authorization.companyId)
+      .select('*')
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ variationOrder: data });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Failed to update variation order' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const authorization = await getAuthorizedUser();
+    if ('error' in authorization) {
+      return NextResponse.json({ error: authorization.error }, { status: authorization.status });
+    }
+
+    if (authorization.role !== 'admin') {
+      return NextResponse.json({ error: 'Only admins can delete variation orders' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Variation order id is required' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('Sangpo_Variation_Order')
+      .delete()
+      .eq('id', id)
+      .eq('company_id', authorization.companyId);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Failed to delete variation order' }, { status: 500 });
+  }
+}

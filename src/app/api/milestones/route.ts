@@ -167,3 +167,37 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: error.message || 'Failed to update milestone' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const authorization = await getAuthorizedUser();
+    if ('error' in authorization) {
+      return NextResponse.json({ error: authorization.error }, { status: authorization.status });
+    }
+
+    if (authorization.role !== 'admin') {
+      return NextResponse.json({ error: 'Only admins can delete milestones' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Milestone id is required' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('Sangpo_Milestone')
+      .delete()
+      .eq('id', id)
+      .eq('company_id', authorization.companyId);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Failed to delete milestone' }, { status: 500 });
+  }
+}
