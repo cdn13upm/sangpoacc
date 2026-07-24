@@ -1,5 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+
+// Define a type for the user data
+type SangpoUser = {
+  role: string;
+  company_id: string | null;
+  Sangpo_Company?: { name: string }[];
+};
 
 export default async function Dashboard() {
   const supabase = createClient();
@@ -9,25 +17,24 @@ export default async function Dashboard() {
     redirect("/login");
   }
 
-  // Fetch user's role and company
+  // Fetch user's role and company with type assertion
   const { data: sangpoUser } = await supabase
     .from("Sangpo_User")
     .select("role, company_id, Sangpo_Company(name)")
     .eq("id", user.id)
-    .single() as { data: any };
+    .single() as { data: SangpoUser | null };
 
   return (
-    <div style={{ minHeight: "100vh", padding: "2rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <div>
-          <h1 style={{ fontSize: "1.875rem", fontWeight: "bold" }}>Dashboard</h1>
-          {sangpoUser && (
-            <p style={{ color: "#4b5563" }}>
-              {sangpoUser.Sangpo_Company?.[0]?.name || "No company assigned"} • {sangpoUser.role}
-            </p>
-          )}
-        </div>
-        <LogoutButton />
+    <div>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontSize: "1.875rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
+          Dashboard
+        </h1>
+        {sangpoUser && (
+          <p style={{ color: "#4b5563" }}>
+            {sangpoUser.Sangpo_Company?.[0]?.name || "No company assigned"} • {sangpoUser.role}
+          </p>
+        )}
       </div>
 
       <div style={{
@@ -44,25 +51,9 @@ export default async function Dashboard() {
   );
 }
 
-function LogoutButton() {
-  return (
-    <form action="/auth/signout" method="post">
-      <button style={{
-        backgroundColor: "#e5e7eb",
-        padding: "0.5rem 1rem",
-        borderRadius: "0.375rem",
-        border: "none",
-        cursor: "pointer"
-      }}>
-        Logout
-      </button>
-    </form>
-  );
-}
-
 function DashboardCard({ title, href }: { title: string; href: string }) {
   return (
-    <a
+    <Link
       href={href}
       style={{
         backgroundColor: "white",
@@ -74,6 +65,6 @@ function DashboardCard({ title, href }: { title: string; href: string }) {
       }}
     >
       <h2 style={{ fontSize: "1.25rem", fontWeight: "600" }}>{title}</h2>
-    </a>
+    </Link>
   );
 }
