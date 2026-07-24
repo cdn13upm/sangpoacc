@@ -14,7 +14,7 @@ export default async function Dashboard() {
     .from("Sangpo_User")
     .select("role, company_id, Sangpo_Company(name)")
     .eq("id", user.id)
-    .single();
+    .single() as { data: any };
 
   return (
     <div style={{ minHeight: "100vh", padding: "2rem" }}>
