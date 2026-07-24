@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   bodyCellStyle,
@@ -138,6 +138,8 @@ export default function LegacyMilestonesPage() {
   const [voForm, setVoForm] = useState<VoFormState>(emptyVoForm);
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [editingVoId, setEditingVoId] = useState<string | null>(null);
+  const milestonePanelRef = useRef<HTMLDivElement | null>(null);
+  const voPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -197,8 +199,17 @@ export default function LegacyMilestonesPage() {
     setEditingVoId(null);
   }
 
+  function scrollToPanel(panel: HTMLDivElement | null) {
+    if (!panel || typeof window === 'undefined') return;
+
+    window.requestAnimationFrame(() => {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
   function startMilestoneEdit(milestone: Milestone) {
     setEditingMilestoneId(milestone.id);
+    setEditingVoId(null);
     setMilestoneForm({
       supplier_id: milestone.supplier_id || '',
       title: milestone.title || '',
@@ -210,10 +221,12 @@ export default function LegacyMilestonesPage() {
       sort_order: String(milestone.sort_order || 0),
       status: milestone.status || 'draft',
     });
+    scrollToPanel(milestonePanelRef.current);
   }
 
   function startVoEdit(item: VariationOrder) {
     setEditingVoId(item.id);
+    setEditingMilestoneId(null);
     setVoForm({
       supplier_id: item.supplier_id || '',
       milestone_id: item.milestone_id || '',
@@ -224,6 +237,7 @@ export default function LegacyMilestonesPage() {
       payment_reference: item.payment_reference || '',
       status: item.status || 'draft',
     });
+    scrollToPanel(voPanelRef.current);
   }
 
   async function handleMilestoneSubmit(e: React.FormEvent) {
@@ -346,6 +360,10 @@ export default function LegacyMilestonesPage() {
 
       {isAdmin && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div
+            ref={milestonePanelRef}
+            style={editingMilestoneId ? { borderRadius: '1rem', boxShadow: '0 0 0 2px rgba(127, 29, 29, 0.16)' } : undefined}
+          >
           <Panel title={editingMilestoneId ? 'Edit Milestone' : 'Add Milestone'}>
             <form onSubmit={handleMilestoneSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <Field label="Supplier">
@@ -388,7 +406,12 @@ export default function LegacyMilestonesPage() {
               </div>
             </form>
           </Panel>
+          </div>
 
+          <div
+            ref={voPanelRef}
+            style={editingVoId ? { borderRadius: '1rem', boxShadow: '0 0 0 2px rgba(127, 29, 29, 0.16)' } : undefined}
+          >
           <Panel title={editingVoId ? 'Edit Variation Order' : 'Add Variation Order'}>
             <form onSubmit={handleVoSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <Field label="Supplier">
@@ -440,6 +463,7 @@ export default function LegacyMilestonesPage() {
               </div>
             </form>
           </Panel>
+          </div>
         </div>
       )}
 
