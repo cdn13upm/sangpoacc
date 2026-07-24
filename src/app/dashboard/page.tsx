@@ -1,5 +1,14 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import {
+  colors,
+  pageHeaderStyle,
+  panelStyle,
+  sectionSubtitleStyle,
+  sectionTitleStyle,
+  summaryCardStyle,
+  summaryGridStyle,
+} from './ui';
 
 type SangpoUser = {
   role: string;
@@ -16,6 +25,7 @@ type SupplierRecord = {
   id: string;
   name: string;
   contract_award_value: number | null;
+  scope_of_work: string | null;
 };
 
 type MilestoneRecord = {
@@ -28,8 +38,6 @@ type VariationOrderRecord = {
   supplier_id: string;
   amount: number | null;
 };
-
-const ringColors = ['#f472b6', '#4dd0e1', '#f5b041', '#7ac943', '#4c6fff', '#ff5a5f', '#a66a6a', '#6b7280'];
 
 function formatCurrency(value: number | null | undefined) {
   return new Intl.NumberFormat('en-MY', {
@@ -68,7 +76,11 @@ export default async function Dashboard() {
       ? supabase.from('Sangpo_Project').select('name, overall_budget').eq('company_id', companyId).limit(1).maybeSingle()
       : Promise.resolve({ data: null }),
     companyId
-      ? supabase.from('Sangpo_Supplier').select('id, name, contract_award_value').eq('company_id', companyId).order('created_at', { ascending: true })
+      ? supabase
+          .from('Sangpo_Supplier')
+          .select('id, name, contract_award_value, scope_of_work')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: true })
       : Promise.resolve({ data: [] }),
     companyId
       ? supabase.from('Sangpo_Milestone').select('supplier_id, approved_invoice_total, manual_paid_total').eq('company_id', companyId)
@@ -83,16 +95,19 @@ export default async function Dashboard() {
   const milestoneRows = (milestones || []) as MilestoneRecord[];
   const voRows = (variationOrders || []) as VariationOrderRecord[];
 
-  const supplierCards = supplierRows.map((supplier, index) => {
+  const supplierCards = supplierRows.map((supplier) => {
     const awarded = Number(supplier.contract_award_value || 0);
     const approved = milestoneRows
       .filter((milestone) => milestone.supplier_id === supplier.id)
       .reduce((sum, milestone) => sum + Number(milestone.approved_invoice_total || 0), 0);
+    const paid = milestoneRows
+      .filter((milestone) => milestone.supplier_id === supplier.id)
+      .reduce((sum, milestone) => sum + Number(milestone.manual_paid_total || 0), 0);
     const voTotal = voRows
       .filter((vo) => vo.supplier_id === supplier.id)
       .reduce((sum, vo) => sum + Number(vo.amount || 0), 0);
 
-    const progressPercent = awarded > 0 ? clampPercent((approved / awarded) * 100) : 0;
+    const approvedPercent = awarded > 0 ? clampPercent((approved / awarded) * 100) : 0;
     const voPercent = awarded > 0 ? (voTotal / awarded) * 100 : 0;
     const balance = Math.max(awarded - approved, 0);
 
@@ -101,107 +116,124 @@ export default async function Dashboard() {
       name: supplier.name,
       awarded,
       approved,
+      paid,
       balance,
       voTotal,
-      progressPercent,
+      approvedPercent,
       voPercent,
-      ringColor: ringColors[index % ringColors.length],
+      scope: supplier.scope_of_work || 'Scope not added yet',
     };
   });
 
+  const totalAwarded = supplierCards.reduce((sum, item) => sum + item.awarded, 0);
+  const totalApproved = supplierCards.reduce((sum, item) => sum + item.approved, 0);
+  const totalBalance = supplierCards.reduce((sum, item) => sum + item.balance, 0);
+  const totalVo = supplierCards.reduce((sum, item) => sum + item.voTotal, 0);
+
   return (
     <div>
-      <div style={{ marginBottom: '1.4rem' }}>
-        <h1 style={{ fontSize: '2.2rem', fontWeight: '800', color: '#111827', margin: 0, marginBottom: '0.35rem' }}>
-          Dashboard
-        </h1>
-        <p style={{ color: '#6b7280', fontSize: '0.98rem', margin: 0 }}>
-          {sangpoUser?.Sangpo_Company?.[0]?.name || 'No company assigned'} •{' '}
-          <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{sangpoUser?.role || 'user'}</span>
-        </p>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.6rem' }}>
-        <SummaryCard
-          label="Project Name"
-          value={projectRecord?.name || 'Sangpo Temple Renovation Account'}
-        />
-        <SummaryCard
-          label="Overall Budget"
-          value={formatCurrency(projectRecord?.overall_budget || 0)}
-        />
+      <div style={pageHeaderStyle}>
+        <div>
+          <h1 style={sectionTitleStyle}>Dashboard</h1>
+          <p style={sectionSubtitleStyle}>
+            {sangpoUser?.Sangpo_Company?.[0]?.name || 'No company assigned'} •{' '}
+            <span style={{ textTransform: 'capitalize', fontWeight: 700 }}>{sangpoUser?.role || 'user'}</span>
+          </p>
+        </div>
       </div>
 
       <div
         style={{
-          position: 'relative',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '1rem',
-          padding: '1.35rem 1rem 1rem',
-          minHeight: '420px',
-          overflow: 'hidden',
+          ...panelStyle,
+          marginBottom: '1.25rem',
+          background: 'linear-gradient(135deg, rgba(127,29,29,0.98) 0%, rgba(94,20,20,1) 68%, rgba(192,138,43,0.82) 100%)',
+          color: 'white',
+          border: 'none',
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.72), transparent 35%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.55), transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0))',
-            pointerEvents: 'none',
-          }}
-        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ maxWidth: '700px' }}>
+            <p style={{ margin: 0, fontSize: '0.82rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)' }}>
+              Project Overview
+            </p>
+            <h2 style={{ margin: '0.35rem 0 0.55rem', fontSize: '1.8rem', fontWeight: 800 }}>
+              {projectRecord?.name || 'Sangpo Temple Renovation Account'}
+            </h2>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.82)', lineHeight: 1.7 }}>
+              Track contract awards, approved certificates, outstanding balances, and VO growth without mixing original award values.
+            </p>
+          </div>
+          <div style={{ minWidth: '220px' }}>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>Overall Budget</p>
+            <p style={{ margin: '0.4rem 0 0', fontSize: '2rem', fontWeight: 800 }}>
+              {formatCurrency(projectRecord?.overall_budget || 0)}
+            </p>
+          </div>
+        </div>
+      </div>
 
-        {supplierCards.length === 0 ? (
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              backgroundColor: 'white',
-              borderRadius: '1rem',
-              padding: '2rem',
-              border: '1px solid rgba(0,0,0,0.05)',
-              color: '#6b7280',
-            }}
-          >
-            No supplier data yet. Add suppliers with contract awards to start seeing dashboard progress.
+      <div style={{ ...summaryGridStyle, marginBottom: '1.4rem' }}>
+        <SummaryCard label="Suppliers" value={String(supplierCards.length)} accent={colors.brand} />
+        <SummaryCard label="Awarded Contract" value={formatCurrency(totalAwarded)} accent={colors.gold} />
+        <SummaryCard label="Approved Amount" value={formatCurrency(totalApproved)} accent={colors.success} />
+        <SummaryCard label="Outstanding Balance" value={formatCurrency(totalBalance)} accent={colors.warning} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(300px, 1fr)', gap: '1rem', alignItems: 'start' }}>
+        <div style={panelStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Supplier Progress</h2>
+              <p style={{ ...sectionSubtitleStyle, fontSize: '0.92rem', marginTop: '0.25rem' }}>
+                Cleaner contract progress by supplier, with VO shown separately.
+              </p>
+            </div>
           </div>
-        ) : (
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '1.4rem 1.15rem',
-            }}
-          >
-            {supplierCards.map((supplier) => (
-              <SupplierProgressCard key={supplier.id} supplier={supplier} />
-            ))}
+
+          {supplierCards.length === 0 ? (
+            <EmptyState message="No supplier data yet. Add suppliers with contract awards to start seeing progress." />
+          ) : (
+            <div style={{ display: 'grid', gap: '0.95rem' }}>
+              {supplierCards.map((supplier) => (
+                <SupplierProgressCard key={supplier.id} supplier={supplier} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          <div style={panelStyle}>
+            <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Financial Snapshot</h2>
+            <div style={{ display: 'grid', gap: '0.9rem', marginTop: '1rem' }}>
+              <SnapshotRow label="Project Budget" value={formatCurrency(projectRecord?.overall_budget || 0)} />
+              <SnapshotRow label="Approved Amount" value={formatCurrency(totalApproved)} />
+              <SnapshotRow label="VO Total" value={formatCurrency(totalVo)} />
+              <SnapshotRow label="Manual Paid" value={formatCurrency(supplierCards.reduce((sum, item) => sum + item.paid, 0))} />
+            </div>
           </div>
-        )}
+
+          <div style={panelStyle}>
+            <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Workflow Reminder</h2>
+            <div style={{ display: 'grid', gap: '0.85rem', marginTop: '1rem' }}>
+              <WorkflowItem title="1. Set project budget" description="Keep the base budget clear before supplier awards and claims." />
+              <WorkflowItem title="2. Track supplier awards" description="Original awarded contracts stay fixed while VO increases are recorded separately." />
+              <WorkflowItem title="3. Prepare certificates" description="Admin prepares the certificate, then submits it for manager approval." />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function SummaryCard({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '0.9rem',
-        padding: '0.8rem 1rem',
-        border: '1px solid rgba(0,0,0,0.05)',
-        boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
-      }}
-    >
-      <p style={{ fontSize: '0.78rem', color: '#6b7280', margin: 0, marginBottom: '0.2rem', fontWeight: '600' }}>
+    <div style={summaryCardStyle}>
+      <div style={{ width: '42px', height: '5px', borderRadius: '999px', backgroundColor: accent, marginBottom: '0.9rem' }} />
+      <p style={{ fontSize: '0.8rem', color: colors.muted, margin: 0, marginBottom: '0.3rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         {label}
       </p>
-      <p style={{ fontSize: '1.45rem', color: '#111827', margin: 0, fontWeight: '800' }}>{value}</p>
+      <p style={{ fontSize: '1.45rem', color: colors.ink, margin: 0, fontWeight: 800 }}>{value}</p>
     </div>
   );
 }
@@ -213,58 +245,108 @@ function SupplierProgressCard({
     name: string;
     awarded: number;
     approved: number;
+    paid: number;
     balance: number;
     voTotal: number;
-    progressPercent: number;
+    approvedPercent: number;
     voPercent: number;
-    ringColor: string;
+    scope: string;
   };
 }) {
+  const voBadgeStyle = supplier.voTotal > 0
+    ? { color: colors.warning, backgroundColor: colors.warningTint, borderColor: '#fcd34d' }
+    : { color: colors.success, backgroundColor: colors.successTint, borderColor: '#86efac' };
+
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
-        padding: '0.2rem 0.2rem 0.1rem',
+        border: '1px solid #ece7e5',
+        borderRadius: '1rem',
+        padding: '1rem 1.05rem',
+        background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfb 100%)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.55rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ margin: 0, fontSize: '1.02rem', color: colors.ink, fontWeight: 800 }}>{supplier.name}</h3>
+          <p style={{ margin: '0.3rem 0 0', color: colors.muted, fontSize: '0.9rem', lineHeight: 1.55 }}>
+            {supplier.scope}
+          </p>
+        </div>
         <div
           style={{
-            width: '150px',
-            height: '150px',
+            padding: '0.38rem 0.7rem',
             borderRadius: '999px',
-            border: `4px solid ${supplier.ringColor}`,
-            backgroundColor: 'rgba(255,255,255,0.72)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            padding: '1rem',
-            color: '#374151',
-            fontWeight: '600',
-            lineHeight: 1.3,
-            boxSizing: 'border-box',
+            border: `1px solid ${voBadgeStyle.borderColor}`,
+            color: voBadgeStyle.color,
+            backgroundColor: voBadgeStyle.backgroundColor,
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
           }}
         >
-          <span style={{ maxWidth: '100%' }}>{supplier.name}</span>
+          VO {supplier.voPercent.toFixed(1)}%
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.2rem' }}>
-        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#111827' }}>
-          {supplier.progressPercent.toFixed(0)}%
-        </span>
-      </div>
-
-      <div style={{ fontSize: '0.9rem', color: '#4b5563', lineHeight: 1.6 }}>
-        <div>Awarded Contract : {formatCurrency(supplier.awarded)}</div>
-        <div>Approved Payment : {formatCurrency(supplier.approved)}</div>
-        <div>Balance Amount : {formatCurrency(supplier.balance)}</div>
-        <div style={{ color: '#ef4444', fontWeight: '700' }}>Total approved VO: {formatCurrency(supplier.voTotal)}</div>
-        <div style={{ color: '#ef4444', fontWeight: '800', fontSize: '1rem' }}>
-          VO Percentage - {supplier.voPercent.toFixed(0)}%
+      <div style={{ marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.45rem', fontSize: '0.88rem', color: colors.muted }}>
+          <span>Approved Progress</span>
+          <strong style={{ color: colors.ink }}>{supplier.approvedPercent.toFixed(0)}%</strong>
+        </div>
+        <div style={{ width: '100%', height: '10px', borderRadius: '999px', backgroundColor: '#ebe7e5', overflow: 'hidden' }}>
+          <div
+            style={{
+              width: `${supplier.approvedPercent}%`,
+              height: '100%',
+              borderRadius: '999px',
+              background: `linear-gradient(90deg, ${colors.brand} 0%, ${colors.gold} 100%)`,
+            }}
+          />
         </div>
       </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem 1rem' }}>
+        <MetricBlock label="Awarded Contract" value={formatCurrency(supplier.awarded)} />
+        <MetricBlock label="Approved Amount" value={formatCurrency(supplier.approved)} />
+        <MetricBlock label="Outstanding Balance" value={formatCurrency(supplier.balance)} />
+        <MetricBlock label="VO Total" value={formatCurrency(supplier.voTotal)} />
+      </div>
+    </div>
+  );
+}
+
+function MetricBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p style={{ margin: 0, color: colors.muted, fontSize: '0.8rem', marginBottom: '0.25rem' }}>{label}</p>
+      <p style={{ margin: 0, color: colors.ink, fontWeight: 700 }}>{value}</p>
+    </div>
+  );
+}
+
+function SnapshotRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
+      <span style={{ color: colors.muted, fontSize: '0.92rem' }}>{label}</span>
+      <strong style={{ color: colors.ink }}>{value}</strong>
+    </div>
+  );
+}
+
+function WorkflowItem({ title, description }: { title: string; description: string }) {
+  return (
+    <div style={{ padding: '0.85rem 0.95rem', borderRadius: '0.95rem', backgroundColor: colors.panelSoft, border: '1px solid #ede9e7' }}>
+      <p style={{ margin: 0, fontWeight: 700, color: colors.ink }}>{title}</p>
+      <p style={{ margin: '0.35rem 0 0', color: colors.muted, fontSize: '0.9rem', lineHeight: 1.55 }}>{description}</p>
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: colors.panelSoft, color: colors.muted, border: '1px dashed #d6d3d1' }}>
+      {message}
     </div>
   );
 }

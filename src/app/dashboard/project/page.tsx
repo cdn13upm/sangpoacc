@@ -1,8 +1,23 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  colors,
+  fieldWrapStyle,
+  formGridStyle,
+  inputStyle,
+  labelStyle,
+  pageHeaderStyle,
+  panelStyle,
+  primaryButtonStyle,
+  sectionSubtitleStyle,
+  sectionTitleStyle,
+  summaryCardStyle,
+  summaryGridStyle,
+  textareaStyle,
+} from '../ui';
 
 type ProjectRecord = {
   id: string;
@@ -90,7 +105,7 @@ export default function ProjectPage() {
   }
 
   if (loading) {
-    return <p style={{ color: '#6b7280' }}>Loading project setup...</p>;
+    return <p style={{ color: colors.muted }}>Loading project setup...</p>;
   }
 
   const isAdmin = userRole === 'admin';
@@ -98,12 +113,38 @@ export default function ProjectPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>Project Setup</h1>
-        <p style={{ color: '#6b7280', margin: 0 }}>Set the overall project budget for the Sangpo Temple Renovation account.</p>
+      <div style={pageHeaderStyle}>
+        <div>
+          <h1 style={sectionTitleStyle}>Project Setup</h1>
+          <p style={sectionSubtitleStyle}>
+            Set the base project budget and notes for the Sangpo Temple Renovation account.
+          </p>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div
+        style={{
+          ...panelStyle,
+          marginBottom: '1.2rem',
+          background: 'linear-gradient(135deg, #fff8f7 0%, #ffffff 70%)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ maxWidth: '760px' }}>
+            <p style={{ margin: 0, fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: colors.brand }}>
+              Budget Foundation
+            </p>
+            <h2 style={{ margin: '0.35rem 0 0.45rem', fontSize: '1.55rem', fontWeight: 800, color: colors.ink }}>
+              Keep the original project budget clear from day one
+            </h2>
+            <p style={{ margin: 0, color: colors.muted, lineHeight: 1.65 }}>
+              This amount acts as the financial baseline before supplier awards, milestone claims, and variation orders are tracked.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...summaryGridStyle, marginBottom: '1.25rem' }}>
         <MetricCard label="Project Name" value={project?.name || formData.name} />
         <MetricCard
           label="Overall Budget"
@@ -111,40 +152,57 @@ export default function ProjectPage() {
         />
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)', maxWidth: '760px' }}>
+      <div style={{ ...panelStyle, maxWidth: '920px' }}>
+        <div style={{ marginBottom: '1.1rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Project Details</h2>
+          <p style={{ ...sectionSubtitleStyle, marginTop: '0.25rem', fontSize: '0.92rem' }}>
+            All fields stay inside the form card now, including longer notes and wider numeric values.
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Field label="Project Name">
-            <input value={formData.name} disabled={!isAdmin} onChange={(e) => setFormData({ ...formData, name: e.target.value })} style={inputStyle} />
-          </Field>
-          <Field label="Overall Budget">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.overall_budget}
-              disabled={!isAdmin}
-              onChange={(e) => setFormData({ ...formData, overall_budget: e.target.value })}
-              style={inputStyle}
-            />
-          </Field>
+          <div style={formGridStyle}>
+            <Field label="Project Name">
+              <input
+                value={formData.name}
+                disabled={!isAdmin}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                style={inputStyle}
+              />
+            </Field>
+            <Field label="Overall Budget">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.overall_budget}
+                disabled={!isAdmin}
+                onChange={(e) => setFormData({ ...formData, overall_budget: e.target.value })}
+                style={inputStyle}
+              />
+            </Field>
+          </div>
+
           <Field label="Notes">
             <textarea
-              rows={4}
+              rows={5}
               value={formData.notes}
               disabled={!isAdmin}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+              style={textareaStyle}
             />
           </Field>
+
           {error && <p style={{ color: '#dc2626', margin: 0 }}>{error}</p>}
+
           {isAdmin ? (
             <div>
-              <button type="submit" disabled={saving} style={{ backgroundColor: '#780000', color: 'white', padding: '0.75rem 1.35rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '600', opacity: saving ? 0.7 : 1 }}>
+              <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, opacity: saving ? 0.7 : 1 }}>
                 {saving ? 'Saving...' : 'Save Project Budget'}
               </button>
             </div>
           ) : (
-            <p style={{ color: '#6b7280', margin: 0 }}>Only admin can update the project budget.</p>
+            <p style={{ color: colors.muted, margin: 0 }}>Only admin can update the project budget.</p>
           )}
         </form>
       </div>
@@ -154,27 +212,20 @@ export default function ProjectPage() {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-      <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0, marginBottom: '0.4rem' }}>{label}</p>
-      <p style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>{value}</p>
+    <div style={summaryCardStyle}>
+      <p style={{ color: colors.muted, fontSize: '0.82rem', margin: 0, marginBottom: '0.35rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {label}
+      </p>
+      <p style={{ color: colors.ink, fontSize: '1.2rem', fontWeight: 800, margin: 0, wordBreak: 'break-word' }}>{value}</p>
     </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
+    <div style={fieldWrapStyle}>
+      <label style={labelStyle}>{label}</label>
       {children}
     </div>
   );
 }
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '0.75rem 1rem',
-  border: '2px solid #e5e7eb',
-  borderRadius: '0.5rem',
-  fontSize: '1rem',
-  outline: 'none',
-};

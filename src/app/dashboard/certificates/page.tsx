@@ -1,8 +1,26 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  bodyCellStyle,
+  fieldWrapStyle,
+  headerCellStyle,
+  inputStyle,
+  labelStyle,
+  pageHeaderStyle,
+  panelStyle,
+  panelTitleStyle,
+  primaryButtonStyle,
+  secondaryButtonStyle,
+  sectionSubtitleStyle,
+  sectionTitleStyle,
+  summaryCardStyle,
+  summaryGridStyle,
+  tableWrapStyle,
+  textareaStyle,
+} from '../ui';
 
 type Supplier = {
   id: string;
@@ -181,14 +199,16 @@ export default function CertificatesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>Certificates</h1>
-        <p style={{ color: '#6b7280', margin: 0 }}>
+      <div style={pageHeaderStyle}>
+        <div>
+        <h1 style={sectionTitleStyle}>Certificates</h1>
+        <p style={sectionSubtitleStyle}>
           Admin prepares certificates after confirming invoice amounts. Manager can approve once the certificate is submitted.
         </p>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ ...summaryGridStyle, marginBottom: '1.5rem' }}>
         <Metric label="Certificates" value={String(certificates.length)} />
         <Metric label="Total Certified" value={formatCurrency(totalCertified)} />
       </div>
@@ -197,7 +217,7 @@ export default function CertificatesPage() {
 
       {isAdmin && (
         <Panel title="Create Certificate">
-          <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+          <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
             <Field label="Supplier">
               <select value={formData.supplier_id} onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value, milestone_id: '' })} style={inputStyle}>
                 <option value="">Select supplier</option>
@@ -243,7 +263,7 @@ export default function CertificatesPage() {
             </Field>
             <div style={{ gridColumn: '1 / -1' }}>
               <Field label="Remark">
-                <textarea rows={3} value={formData.approval_remark} onChange={(e) => setFormData({ ...formData, approval_remark: e.target.value })} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+                <textarea rows={3} value={formData.approval_remark} onChange={(e) => setFormData({ ...formData, approval_remark: e.target.value })} style={textareaStyle} />
               </Field>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
@@ -258,7 +278,8 @@ export default function CertificatesPage() {
       <div style={{ height: '1rem' }} />
 
       <Panel title="Certificate Workflow">
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={tableWrapStyle}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '860px' }}>
           <thead style={{ backgroundColor: '#f9fafb' }}>
             <tr>
               <HeaderCell>Certificate</HeaderCell>
@@ -309,6 +330,7 @@ export default function CertificatesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Panel>
     </div>
   );
@@ -316,8 +338,8 @@ export default function CertificatesPage() {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-      <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111827', marginTop: 0, marginBottom: '1rem' }}>{title}</h2>
+    <div style={panelStyle}>
+      <h2 style={panelTitleStyle}>{title}</h2>
       {children}
     </div>
   );
@@ -325,59 +347,26 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-      <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0, marginBottom: '0.4rem' }}>{label}</p>
-      <p style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>{value}</p>
+    <div style={summaryCardStyle}>
+      <p style={{ color: '#6b7280', fontSize: '0.82rem', margin: 0, marginBottom: '0.35rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
+      <p style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>{value}</p>
     </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
+    <div style={fieldWrapStyle}>
+      <label style={labelStyle}>{label}</label>
       {children}
     </div>
   );
 }
 
 function HeaderCell({ children }: { children: ReactNode }) {
-  return (
-    <th style={{ padding: '0.85rem 1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb', color: '#374151', fontWeight: 700, fontSize: '0.9rem' }}>
-      {children}
-    </th>
-  );
+  return <th style={headerCellStyle}>{children}</th>;
 }
 
 function BodyCell({ children }: { children: ReactNode }) {
-  return <td style={{ padding: '0.85rem 1rem', color: '#4b5563' }}>{children}</td>;
+  return <td style={bodyCellStyle}>{children}</td>;
 }
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '0.7rem 0.9rem',
-  border: '2px solid #e5e7eb',
-  borderRadius: '0.5rem',
-  fontSize: '0.95rem',
-  outline: 'none',
-};
-
-const primaryButtonStyle: CSSProperties = {
-  backgroundColor: '#780000',
-  color: 'white',
-  padding: '0.65rem 1.1rem',
-  borderRadius: '0.5rem',
-  border: 'none',
-  cursor: 'pointer',
-  fontWeight: '600',
-};
-
-const secondaryButtonStyle: CSSProperties = {
-  backgroundColor: '#f3f4f6',
-  color: '#111827',
-  padding: '0.65rem 1.1rem',
-  borderRadius: '0.5rem',
-  border: 'none',
-  cursor: 'pointer',
-  fontWeight: '600',
-};

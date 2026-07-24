@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import DashboardNavLink from './nav-link';
+import { colors, contentWrapStyle } from './ui';
 
 type SangpoUser = {
   role: string;
@@ -33,38 +34,48 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: `linear-gradient(180deg, ${colors.page} 0%, #ffffff 100%)` }}>
       <aside style={{
-        width: '250px',
-        background: 'linear-gradient(180deg, #780000 0%, #4a0000 100%)',
-        padding: '1.2rem 0.95rem 1rem',
+        width: '278px',
+        background: 'linear-gradient(180deg, #6b1111 0%, #461010 100%)',
+        padding: '1.25rem 1rem 1rem',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '4px 0 15px rgba(0, 0, 0, 0.08)'
+        boxShadow: '18px 0 42px -30px rgba(0, 0, 0, 0.55)'
       }}>
-        <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.2rem 0.3rem' }}>
-          <img
-            src="/logo.png"
-            alt="Sangpo Buddhist Society"
-            style={{ width: '34px', height: '34px', borderRadius: '999px', objectFit: 'cover' }}
-          />
-          <div>
-            <h2 style={{
-              fontSize: '1.35rem',
-              fontWeight: '800',
-              color: 'white',
-              margin: 0,
-              lineHeight: '1.2'
-            }}>
-              SangpoAcc
-            </h2>
-            <p style={{
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '0.74rem',
-              margin: 0,
-              marginTop: '0.15rem'
-            }}>
-              Account Tracking
+        <div style={{ marginBottom: '1.5rem', borderRadius: '1rem', padding: '0.95rem', backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <img
+              src="/logo.png"
+              alt="Sangpo Buddhist Society"
+              style={{ width: '42px', height: '42px', borderRadius: '999px', objectFit: 'cover', backgroundColor: 'white' }}
+            />
+            <div>
+              <h2 style={{
+                fontSize: '1.35rem',
+                fontWeight: '800',
+                color: 'white',
+                margin: 0,
+                lineHeight: '1.2'
+              }}>
+                SangpoAcc
+              </h2>
+              <p style={{
+                color: 'rgba(255,255,255,0.72)',
+                fontSize: '0.76rem',
+                margin: 0,
+                marginTop: '0.15rem'
+              }}>
+                Renovation account control
+              </p>
+            </div>
+          </div>
+          <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+            <p style={{ color: 'rgba(255,255,255,0.64)', fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0, marginBottom: '0.2rem' }}>
+              Signed in as
+            </p>
+            <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: '700', margin: 0, textTransform: 'capitalize' }}>
+              {sangpoUser?.role || 'User'}
             </p>
           </div>
         </div>
@@ -80,31 +91,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </nav>
 
         <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-          <div style={{ marginBottom: '0.75rem' }}>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', margin: 0, marginBottom: '0.25rem' }}>
-              Role
-            </p>
-            <p style={{
-              color: 'white',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              margin: 0,
-              textTransform: 'capitalize'
-            }}>
-              {sangpoUser?.role || 'User'}
-            </p>
-          </div>
           <form action="/auth/signout" method="post">
             <button style={{
               width: '100%',
-              textAlign: 'left',
-              padding: '0.8rem 0.95rem',
-              borderRadius: '0.7rem',
-              border: 'none',
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              textAlign: 'center',
+              padding: '0.85rem 1rem',
+              borderRadius: '0.8rem',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backgroundColor: 'rgba(255,255,255,0.08)',
               color: 'white',
               cursor: 'pointer',
-              fontWeight: '500',
+              fontWeight: '700',
               fontSize: '0.9rem',
               transition: 'all 0.2s ease'
             }}
@@ -115,8 +112,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
       </aside>
 
-      <main style={{ flex: 1, padding: '2rem 1.6rem' }}>
-        {children}
+      <main style={{ flex: 1, padding: '2rem 1.6rem 2.6rem' }}>
+        <div style={contentWrapStyle}>
+          {children}
+        </div>
       </main>
     </div>
   );

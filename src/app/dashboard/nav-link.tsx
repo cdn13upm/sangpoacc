@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { colors } from './ui';
 
 export default function DashboardNavLink({
   href,
@@ -19,15 +20,15 @@ export default function DashboardNavLink({
       style={{
         display: 'flex',
         alignItems: 'center',
-        padding: '0.8rem 0.95rem',
-        borderRadius: '0.7rem',
+        padding: '0.85rem 0.95rem',
+        borderRadius: '0.85rem',
         color: 'white',
         textDecoration: 'none',
         fontWeight: isActive ? '700' : '600',
         fontSize: '0.92rem',
-        backgroundColor: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-        border: isActive ? '1.5px solid rgba(96, 165, 250, 0.95)' : '1.5px solid transparent',
-        boxShadow: isActive ? 'inset 0 0 0 1px rgba(255,255,255,0.08)' : 'none',
+        background: isActive ? 'linear-gradient(90deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)' : 'transparent',
+        border: isActive ? `1px solid rgba(255,255,255,0.16)` : '1px solid transparent',
+        boxShadow: isActive ? `inset 3px 0 0 0 ${colors.gold}` : 'none',
         transition: 'all 0.2s ease',
       }}
     >

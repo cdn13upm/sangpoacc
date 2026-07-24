@@ -1,8 +1,28 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  bodyCellStyle,
+  colors,
+  fieldWrapStyle,
+  formGridStyle,
+  headerCellStyle,
+  inputStyle,
+  labelStyle,
+  pageHeaderStyle,
+  panelStyle,
+  primaryButtonStyle,
+  sectionSubtitleStyle,
+  sectionTitleStyle,
+  secondaryButtonStyle,
+  summaryCardStyle,
+  summaryGridStyle,
+  tablePanelStyle,
+  tableWrapStyle,
+  textareaStyle,
+} from '../ui';
 
 type Supplier = {
   id: string;
@@ -217,24 +237,17 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+      <div style={pageHeaderStyle}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>Suppliers</h1>
-          <p style={{ color: '#6b7280', margin: 0 }}>Manage supplier details, awarded contract, scope of work, and remarks.</p>
+          <h1 style={sectionTitleStyle}>Suppliers</h1>
+          <p style={sectionSubtitleStyle}>Manage supplier details, awarded contract, scope of work, and remarks.</p>
         </div>
         {isAdmin && (
           <button
             onClick={openCreateModal}
             style={{
-              backgroundColor: '#780000',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.5rem',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-              fontWeight: '600',
-              boxShadow: '0 4px 6px -1px rgb(120 0 0 / 0.3)',
+              ...primaryButtonStyle,
+              whiteSpace: 'nowrap',
             }}
           >
             Add Supplier
@@ -242,13 +255,14 @@ export default function SuppliersPage() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ ...summaryGridStyle, marginBottom: '1.5rem' }}>
         <SummaryCard label="Total Suppliers" value={String(suppliers.length)} />
         <SummaryCard label="Total Awarded Contract" value={formatCurrency(totalAwarded)} />
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={tablePanelStyle}>
+        <div style={tableWrapStyle}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '820px' }}>
           <thead style={{ backgroundColor: '#f9fafb' }}>
             <tr>
               <HeaderCell>Name</HeaderCell>
@@ -318,11 +332,12 @@ export default function SuppliersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '1rem', width: '100%', maxWidth: '840px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid rgba(120,0,0,0.08)', maxHeight: 'calc(100vh - 3rem)', overflowY: 'auto' }}>
+          <div style={{ ...panelStyle, width: '100%', maxWidth: '840px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid rgba(120,0,0,0.08)', maxHeight: 'calc(100vh - 3rem)', overflowY: 'auto', padding: 0 }}>
             <div style={{ padding: '1.6rem 1.75rem 1rem', borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(180deg, #fff7f7 0%, #ffffff 100%)' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem', marginTop: 0 }}>
               {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
@@ -332,7 +347,7 @@ export default function SuppliersPage() {
             </p>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 1.75rem 1.75rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem 1.1rem' }}>
+              <div style={formGridStyle}>
                 <FormField label="Supplier Name">
                   <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required style={inputStyle} />
                 </FormField>
@@ -366,10 +381,10 @@ export default function SuppliersPage() {
               </FormField>
               {formError && <p style={{ color: '#dc2626', fontSize: '0.9rem', margin: 0 }}>{formError}</p>}
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.25rem', borderTop: '1px solid #f1f5f9' }}>
-                <button type="button" onClick={resetForm} style={{ padding: '0.75rem 1.35rem', borderRadius: '0.65rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#374151', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600' }}>
+                <button type="button" onClick={resetForm} style={secondaryButtonStyle}>
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} style={{ backgroundColor: '#780000', color: 'white', padding: '0.75rem 1.4rem', borderRadius: '0.65rem', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700', opacity: saving ? 0.7 : 1, boxShadow: '0 10px 20px -10px rgba(120,0,0,0.55)' }}>
+                <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, opacity: saving ? 0.7 : 1 }}>
                   {saving ? 'Saving...' : 'Save Supplier'}
                 </button>
               </div>
@@ -383,50 +398,26 @@ export default function SuppliersPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-      <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0, marginBottom: '0.4rem' }}>{label}</p>
-      <p style={{ color: '#111827', fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>{value}</p>
+    <div style={summaryCardStyle}>
+      <p style={{ color: colors.muted, fontSize: '0.82rem', margin: 0, marginBottom: '0.35rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
+      <p style={{ color: colors.ink, fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{value}</p>
     </div>
   );
 }
 
 function HeaderCell({ children }: { children: ReactNode }) {
-  return (
-    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb', color: '#374151', fontWeight: '700', fontSize: '0.9rem' }}>
-      {children}
-    </th>
-  );
+  return <th style={headerCellStyle}>{children}</th>;
 }
 
 function BodyCell({ children }: { children: ReactNode }) {
-  return <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>{children}</td>;
+  return <td style={bodyCellStyle}>{children}</td>;
 }
 
 function FormField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ minWidth: 0 }}>
-      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#374151', marginBottom: '0.45rem' }}>{label}</label>
+    <div style={fieldWrapStyle}>
+      <label style={labelStyle}>{label}</label>
       {children}
     </div>
   );
 }
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '0.75rem 1rem',
-  border: '1px solid #d1d5db',
-  borderRadius: '0.7rem',
-  fontSize: '0.98rem',
-  outline: 'none',
-  backgroundColor: '#ffffff',
-  color: '#111827',
-  boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.03)',
-};
-
-const textareaStyle: CSSProperties = {
-  ...inputStyle,
-  resize: 'vertical',
-  fontFamily: 'inherit',
-  lineHeight: 1.5,
-};

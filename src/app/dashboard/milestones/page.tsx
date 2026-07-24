@@ -1,8 +1,25 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  bodyCellStyle,
+  fieldWrapStyle,
+  headerCellStyle,
+  inputStyle,
+  labelStyle,
+  pageHeaderStyle,
+  panelStyle,
+  panelTitleStyle,
+  primaryButtonStyle,
+  sectionSubtitleStyle,
+  sectionTitleStyle,
+  summaryCardStyle,
+  summaryGridStyle,
+  tableWrapStyle,
+  textareaStyle,
+} from '../ui';
 
 type SupplierOption = {
   id: string;
@@ -199,14 +216,16 @@ export default function MilestonesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>Milestones & VO</h1>
-        <p style={{ color: '#6b7280', margin: 0 }}>
+      <div style={pageHeaderStyle}>
+        <div>
+        <h1 style={sectionTitleStyle}>Milestones & VO</h1>
+        <p style={sectionSubtitleStyle}>
           Track milestone amounts against the awarded contract and keep VO separate from the original award value.
         </p>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ ...summaryGridStyle, marginBottom: '1.5rem' }}>
         <Metric label="Milestone Total" value={formatCurrency(totalMilestones)} />
         <Metric label="Approved Invoice Total" value={formatCurrency(totalApproved)} />
         <Metric label="VO Total" value={formatCurrency(totalVo)} />
@@ -241,7 +260,7 @@ export default function MilestonesPage() {
                 <input type="number" min="0" step="0.01" value={milestoneForm.manual_paid_total} onChange={(e) => setMilestoneForm({ ...milestoneForm, manual_paid_total: e.target.value })} style={inputStyle} />
               </Field>
               <Field label="Description">
-                <textarea rows={3} value={milestoneForm.description} onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+                <textarea rows={3} value={milestoneForm.description} onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })} style={textareaStyle} />
               </Field>
               <button type="submit" disabled={savingMilestone} style={primaryButtonStyle}>
                 {savingMilestone ? 'Saving...' : 'Save Milestone'}
@@ -280,7 +299,7 @@ export default function MilestonesPage() {
                 <input type="number" min="0" step="0.01" value={voForm.amount} onChange={(e) => setVoForm({ ...voForm, amount: e.target.value })} style={inputStyle} />
               </Field>
               <Field label="Description">
-                <textarea rows={3} value={voForm.description} onChange={(e) => setVoForm({ ...voForm, description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+                <textarea rows={3} value={voForm.description} onChange={(e) => setVoForm({ ...voForm, description: e.target.value })} style={textareaStyle} />
               </Field>
               <button type="submit" disabled={savingVo} style={primaryButtonStyle}>
                 {savingVo ? 'Saving...' : 'Save VO'}
@@ -291,7 +310,8 @@ export default function MilestonesPage() {
       )}
 
       <Panel title="Milestone Summary">
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={tableWrapStyle}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
           <thead style={{ backgroundColor: '#f9fafb' }}>
             <tr>
               <HeaderCell>Supplier</HeaderCell>
@@ -326,12 +346,14 @@ export default function MilestonesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Panel>
 
       <div style={{ height: '1rem' }} />
 
       <Panel title="Variation Orders">
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={tableWrapStyle}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
           <thead style={{ backgroundColor: '#f9fafb' }}>
             <tr>
               <HeaderCell>Supplier</HeaderCell>
@@ -361,6 +383,7 @@ export default function MilestonesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Panel>
     </div>
   );
@@ -368,8 +391,8 @@ export default function MilestonesPage() {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-      <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111827', marginTop: 0, marginBottom: '1rem' }}>{title}</h2>
+    <div style={panelStyle}>
+      <h2 style={panelTitleStyle}>{title}</h2>
       {children}
     </div>
   );
@@ -377,49 +400,26 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-      <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0, marginBottom: '0.4rem' }}>{label}</p>
-      <p style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>{value}</p>
+    <div style={summaryCardStyle}>
+      <p style={{ color: '#6b7280', fontSize: '0.82rem', margin: 0, marginBottom: '0.35rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
+      <p style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>{value}</p>
     </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
+    <div style={fieldWrapStyle}>
+      <label style={labelStyle}>{label}</label>
       {children}
     </div>
   );
 }
 
 function HeaderCell({ children }: { children: ReactNode }) {
-  return (
-    <th style={{ padding: '0.85rem 1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb', color: '#374151', fontWeight: 700, fontSize: '0.9rem' }}>
-      {children}
-    </th>
-  );
+  return <th style={headerCellStyle}>{children}</th>;
 }
 
 function BodyCell({ children }: { children: ReactNode }) {
-  return <td style={{ padding: '0.85rem 1rem', color: '#4b5563' }}>{children}</td>;
+  return <td style={bodyCellStyle}>{children}</td>;
 }
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '0.7rem 0.9rem',
-  border: '2px solid #e5e7eb',
-  borderRadius: '0.5rem',
-  fontSize: '0.95rem',
-  outline: 'none',
-};
-
-const primaryButtonStyle: CSSProperties = {
-  backgroundColor: '#780000',
-  color: 'white',
-  padding: '0.75rem 1.2rem',
-  borderRadius: '0.5rem',
-  border: 'none',
-  cursor: 'pointer',
-  fontWeight: '600',
-};
