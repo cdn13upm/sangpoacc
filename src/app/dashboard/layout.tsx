@@ -1,12 +1,13 @@
+import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
+import DashboardNavLink from './nav-link';
 
 type SangpoUser = {
   role: string;
 };
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -32,26 +33,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      {/* Sidebar */}
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
       <aside style={{
-        width: '260px',
+        width: '250px',
         background: 'linear-gradient(180deg, #780000 0%, #4a0000 100%)',
-        padding: '2rem 1.25rem',
+        padding: '1.2rem 0.95rem 1rem',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '4px 0 15px rgba(0, 0, 0, 0.1)'
+        boxShadow: '4px 0 15px rgba(0, 0, 0, 0.08)'
       }}>
-        {/* Logo and Title */}
-        <div style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.2rem 0.3rem' }}>
           <img
             src="/logo.png"
             alt="Sangpo Buddhist Society"
-            style={{ width: '48px', height: '48px' }}
+            style={{ width: '34px', height: '34px', borderRadius: '999px', objectFit: 'cover' }}
           />
           <div>
             <h2 style={{
-              fontSize: '1.25rem',
+              fontSize: '1.35rem',
               fontWeight: '800',
               color: 'white',
               margin: 0,
@@ -61,7 +60,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </h2>
             <p style={{
               color: 'rgba(255,255,255,0.7)',
-              fontSize: '0.75rem',
+              fontSize: '0.74rem',
               margin: 0,
               marginTop: '0.15rem'
             }}>
@@ -70,30 +69,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </div>
 
-        {/* Navigation */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
           {navItems.map((item) => (
-            <Link
+            <DashboardNavLink
               key={item.href}
               href={item.href}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0.75rem 1rem',
-                borderRadius: '0.5rem',
-                color: 'rgba(255,255,255,0.85)',
-                textDecoration: 'none',
-                fontWeight: '500',
-                fontSize: '0.95rem',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {item.label}
-            </Link>
+              label={item.label}
+            />
           ))}
         </nav>
 
-        {/* User Info and Logout */}
         <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
           <div style={{ marginBottom: '0.75rem' }}>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', margin: 0, marginBottom: '0.25rem' }}>
@@ -113,8 +98,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <button style={{
               width: '100%',
               textAlign: 'left',
-              padding: '0.75rem 1rem',
-              borderRadius: '0.5rem',
+              padding: '0.8rem 0.95rem',
+              borderRadius: '0.7rem',
               border: 'none',
               backgroundColor: 'rgba(255,255,255,0.1)',
               color: 'white',
@@ -130,8 +115,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '2.5rem' }}>
+      <main style={{ flex: 1, padding: '2rem 1.6rem' }}>
         {children}
       </main>
     </div>
