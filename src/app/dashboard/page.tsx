@@ -122,8 +122,14 @@ export default async function Dashboard() {
 
   const totalAwarded = supplierCards.reduce((sum, item) => sum + item.awarded, 0);
   const totalApproved = supplierCards.reduce((sum, item) => sum + item.approved, 0);
-  const totalBalance = supplierCards.reduce((sum, item) => sum + item.balance, 0);
   const totalVo = supplierCards.reduce((sum, item) => sum + item.voTotal, 0);
+  const projectBudget = Number(projectRecord?.overall_budget || 0);
+  const committedValue = totalAwarded + totalVo;
+  const remainingBudget = projectBudget - committedValue;
+  const usagePercentRaw = projectBudget > 0 ? (committedValue / projectBudget) * 100 : 0;
+  const usagePercent = clampPercent(usagePercentRaw);
+  const budgetExceededPercent = Math.max(usagePercentRaw - 100, 0);
+  const isOverBudget = remainingBudget < 0;
 
   return (
     <div>
@@ -157,12 +163,31 @@ export default async function Dashboard() {
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.82)', lineHeight: 1.7 }}>
               Track contract awards, approved certificates, outstanding balances, and VO growth without mixing original award values.
             </p>
-          </div>
-          <div style={{ minWidth: '220px' }}>
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>Overall Budget</p>
-            <p style={{ margin: '0.4rem 0 0', fontSize: '2rem', fontWeight: 800 }}>
-              {formatCurrency(projectRecord?.overall_budget || 0)}
+            <p style={{ margin: '1rem 0 0', color: 'rgba(255,255,255,0.78)', fontSize: '0.92rem', lineHeight: 1.65 }}>
+              Budget logic: Total Awarded Contract + Total VO = committed value. Remaining balance is based on the project budget after deducting that committed value.
             </p>
+          </div>
+          <div style={{ minWidth: '320px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <BudgetProgressRing percent={usagePercent} isOverBudget={isOverBudget} />
+              <div style={{ minWidth: '220px' }}>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>Overall Budget</p>
+                <p style={{ margin: '0.2rem 0 0.45rem', fontSize: '2rem', fontWeight: 800 }}>
+                  {formatCurrency(projectBudget)}
+                </p>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>
+                  {isOverBudget ? 'Over Budget Amount' : 'Remaining Balance'}
+                </p>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '1.75rem', fontWeight: 800, color: isOverBudget ? '#fecaca' : 'white' }}>
+                  {formatCurrency(Math.abs(remainingBudget))}
+                </p>
+                <p style={{ margin: '0.45rem 0 0', color: isOverBudget ? '#fecaca' : 'rgba(255,255,255,0.78)', fontSize: '0.92rem', fontWeight: 700 }}>
+                  {isOverBudget
+                    ? `Exceeded budget by ${budgetExceededPercent.toFixed(1)}%`
+                    : `Using ${usagePercentRaw.toFixed(1)}% of project budget`}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -170,8 +195,12 @@ export default async function Dashboard() {
       <div style={{ ...summaryGridStyle, marginBottom: '1.4rem' }}>
         <SummaryCard label="Suppliers" value={String(supplierCards.length)} accent={colors.brand} />
         <SummaryCard label="Awarded Contract" value={formatCurrency(totalAwarded)} accent={colors.gold} />
-        <SummaryCard label="Approved Amount" value={formatCurrency(totalApproved)} accent={colors.success} />
-        <SummaryCard label="Outstanding Balance" value={formatCurrency(totalBalance)} accent={colors.warning} />
+        <SummaryCard label="VO Total" value={formatCurrency(totalVo)} accent={colors.warning} />
+        <SummaryCard
+          label={isOverBudget ? 'Over Budget' : 'Remaining Budget'}
+          value={formatCurrency(Math.abs(remainingBudget))}
+          accent={isOverBudget ? '#dc2626' : colors.success}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(300px, 1fr)', gap: '1rem', alignItems: 'start' }}>
@@ -201,8 +230,9 @@ export default async function Dashboard() {
             <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Financial Snapshot</h2>
             <div style={{ display: 'grid', gap: '0.9rem', marginTop: '1rem' }}>
               <SnapshotRow label="Project Budget" value={formatCurrency(projectRecord?.overall_budget || 0)} />
+              <SnapshotRow label="Committed Value" value={formatCurrency(committedValue)} />
               <SnapshotRow label="Approved Amount" value={formatCurrency(totalApproved)} />
-              <SnapshotRow label="VO Total" value={formatCurrency(totalVo)} />
+              <SnapshotRow label="Total VO" value={formatCurrency(totalVo)} />
               <SnapshotRow label="Milestones" value={String(milestoneRows.length)} />
             </div>
           </div>
@@ -216,6 +246,41 @@ export default async function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function BudgetProgressRing({ percent, isOverBudget }: { percent: number; isOverBudget: boolean }) {
+  const ringColor = isOverBudget ? '#ef4444' : '#22c55e';
+  const trackColor = 'rgba(255,255,255,0.18)';
+
+  return (
+    <div
+      style={{
+        width: '74px',
+        height: '74px',
+        borderRadius: '999px',
+        background: `conic-gradient(${ringColor} 0 ${percent}%, ${trackColor} ${percent}% 100%)`,
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          width: '60px',
+          height: '60px',
+          borderRadius: '999px',
+          backgroundColor: 'rgba(94,20,20,0.96)',
+          display: 'grid',
+          placeItems: 'center',
+          color: 'white',
+          fontWeight: 800,
+          fontSize: '1.2rem',
+        }}
+      >
+        {percent.toFixed(0)}%
       </div>
     </div>
   );
