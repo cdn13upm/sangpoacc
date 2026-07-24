@@ -38,18 +38,53 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #780000 0%, #2d0000 100%)',
-      padding: '2rem'
+      backgroundColor: '#ffffff',
+      backgroundImage: `
+        linear-gradient(135deg, rgba(120, 0, 0, 0.08) 0%, transparent 28%),
+        linear-gradient(90deg, rgba(120, 0, 0, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(120, 0, 0, 0.05) 1px, transparent 1px)
+      `,
+      backgroundSize: '100% 100%, 42px 42px, 42px 42px',
+      padding: '2rem',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
+      <div style={{
+        position: 'absolute',
+        inset: '0',
+        pointerEvents: 'none',
+        background: 'linear-gradient(180deg, rgba(120, 0, 0, 0.06) 0%, transparent 18%, transparent 82%, rgba(120, 0, 0, 0.08) 100%)'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        right: '0',
+        height: '6px',
+        background: 'linear-gradient(90deg, #780000 0%, #b91c1c 50%, #780000 100%)'
+      }} />
       <div style={{
         backgroundColor: 'white',
         padding: '3rem 2.5rem',
         borderRadius: '1rem',
-        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 10px 10px -5px rgb(0 0 0 / 0.2)',
+        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.12), 0 10px 10px -5px rgb(0 0 0 / 0.08)',
         width: '100%',
         maxWidth: '420px',
-        textAlign: 'center'
+        textAlign: 'center',
+        border: '1px solid rgba(120, 0, 0, 0.12)',
+        position: 'relative',
+        zIndex: 1
       }}>
+        <div style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          right: '0',
+          height: '5px',
+          borderTopLeftRadius: '1rem',
+          borderTopRightRadius: '1rem',
+          background: 'linear-gradient(90deg, #780000 0%, #d32f2f 55%, #780000 100%)'
+        }} />
         <div style={{ marginBottom: '2rem' }}>
           <img
             src="https://i.imgur.com/3QwX7aL.png"
