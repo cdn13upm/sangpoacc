@@ -52,95 +52,191 @@ export default function SuppliersPage() {
   }
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <div style={{ padding: "2rem" }}>Loading...</div>;
   }
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Suppliers</h1>
+    <div style={{ padding: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h1 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>Suppliers</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          style={{
+            backgroundColor: "#2563eb",
+            color: "white",
+            padding: "0.5rem 1rem",
+            borderRadius: "0.375rem",
+            border: "none",
+            cursor: "pointer"
+          }}
         >
           Add Supplier
         </button>
       </div>
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
+      <div style={{
+        backgroundColor: "white",
+        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+        borderRadius: "0.5rem",
+        overflow: "hidden"
+      }}>
+        <table style={{ width: "100%" }}>
+          <thead style={{ backgroundColor: "#f9fafb" }}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax ID</th>
+              <th style={{
+                padding: "0.75rem 1.5rem",
+                textAlign: "left",
+                fontSize: "0.75rem",
+                fontWeight: "500",
+                color: "#6b7280",
+                textTransform: "uppercase"
+              }}>Name</th>
+              <th style={{
+                padding: "0.75rem 1.5rem",
+                textAlign: "left",
+                fontSize: "0.75rem",
+                fontWeight: "500",
+                color: "#6b7280",
+                textTransform: "uppercase"
+              }}>Email</th>
+              <th style={{
+                padding: "0.75rem 1.5rem",
+                textAlign: "left",
+                fontSize: "0.75rem",
+                fontWeight: "500",
+                color: "#6b7280",
+                textTransform: "uppercase"
+              }}>Phone</th>
+              <th style={{
+                padding: "0.75rem 1.5rem",
+                textAlign: "left",
+                fontSize: "0.75rem",
+                fontWeight: "500",
+                color: "#6b7280",
+                textTransform: "uppercase"
+              }}>Tax ID</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody>
             {suppliers.map((supplier) => (
-              <tr key={supplier.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{supplier.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{supplier.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{supplier.phone}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{supplier.tax_id}</td>
+              <tr key={supplier.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                <td style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{supplier.name}</td>
+                <td style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{supplier.email}</td>
+                <td style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{supplier.phone}</td>
+                <td style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{supplier.tax_id}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Add Supplier</h2>
-            <form onSubmit={handleAddSupplier} className="space-y-4">
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <div style={{
+            backgroundColor: "white",
+            padding: "1.5rem",
+            borderRadius: "0.5rem",
+            width: "100%",
+            maxWidth: "28rem"
+          }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: "bold", marginBottom: "1rem" }}>Add Supplier</h2>
+            <form onSubmit={handleAddSupplier} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#374151" }}>Name</label>
                 <input
                   type="text"
                   value={newSupplier.name}
                   onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                  style={{
+                    marginTop: "0.25rem",
+                    display: "block",
+                    width: "100%",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #d1d5db",
+                    padding: "0.5rem 0.75rem"
+                  }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#374151" }}>Email</label>
                 <input
                   type="email"
                   value={newSupplier.email}
                   onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                  style={{
+                    marginTop: "0.25rem",
+                    display: "block",
+                    width: "100%",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #d1d5db",
+                    padding: "0.5rem 0.75rem"
+                  }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Phone</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#374151" }}>Phone</label>
                 <input
                   type="text"
                   value={newSupplier.phone}
                   onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                  style={{
+                    marginTop: "0.25rem",
+                    display: "block",
+                    width: "100%",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #d1d5db",
+                    padding: "0.5rem 0.75rem"
+                  }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Tax ID</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#374151" }}>Tax ID</label>
                 <input
                   type="text"
                   value={newSupplier.tax_id}
                   onChange={(e) => setNewSupplier({ ...newSupplier, tax_id: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                  style={{
+                    marginTop: "0.25rem",
+                    display: "block",
+                    width: "100%",
+                    borderRadius: "0.375rem",
+                    border: "1px solid #d1d5db",
+                    padding: "0.5rem 0.75rem"
+                  }}
                 />
               </div>
-              <div className="flex gap-3">
+              <div style={{ display: "flex", gap: "0.75rem" }}>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300"
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#e5e7eb",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.375rem",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#2563eb",
+                    color: "white",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.375rem",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
                 >
                   Add
                 </button>

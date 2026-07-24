@@ -1,7 +1,9 @@
 export default function Home() {
   return (
-    <div className="min-h-screen p-8">
-      <h1 className="text-4xl font-bold mb-8">Sangpo Account Tracking System</h1>
+    <div style={{ minHeight: "100vh", padding: "2rem" }}>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: "bold", marginBottom: "2rem" }}>
+        Sangpo Account Tracking System
+      </h1>
       <p>Welcome! Please login to continue.</p>
     </div>
   );
