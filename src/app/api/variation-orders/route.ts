@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { supplier_id, milestone_id, vo_number, description, amount, status } = body;
+    const { supplier_id, milestone_id, vo_number, description, amount, status, payment_date, payment_reference } = body;
 
     if (!supplier_id || !vo_number?.trim()) {
       return NextResponse.json({ error: 'Supplier and VO number are required' }, { status: 400 });
@@ -86,6 +86,8 @@ export async function POST(request: Request) {
         description: description?.trim() || null,
         amount: Number(amount || 0),
         status: status || 'draft',
+        payment_date: payment_date || null,
+        payment_reference: payment_reference?.trim() || null,
       })
       .select('*')
       .single();
@@ -112,7 +114,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, supplier_id, milestone_id, vo_number, description, amount, status } = body;
+    const { id, supplier_id, milestone_id, vo_number, description, amount, status, payment_date, payment_reference } = body;
 
     if (!id || !supplier_id || !vo_number?.trim()) {
       return NextResponse.json({ error: 'VO id, supplier, and VO number are required' }, { status: 400 });
@@ -127,6 +129,8 @@ export async function PATCH(request: Request) {
         description: description?.trim() || null,
         amount: Number(amount || 0),
         status: status || 'draft',
+        payment_date: payment_date || null,
+        payment_reference: payment_reference?.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

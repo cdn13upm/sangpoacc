@@ -31,7 +31,6 @@ type SupplierRecord = {
 type MilestoneRecord = {
   supplier_id: string;
   approved_invoice_total: number | null;
-  manual_paid_total: number | null;
 };
 
 type VariationOrderRecord = {
@@ -83,7 +82,7 @@ export default async function Dashboard() {
           .order('created_at', { ascending: true })
       : Promise.resolve({ data: [] }),
     companyId
-      ? supabase.from('Sangpo_Milestone').select('supplier_id, approved_invoice_total, manual_paid_total').eq('company_id', companyId)
+      ? supabase.from('Sangpo_Milestone').select('supplier_id, approved_invoice_total').eq('company_id', companyId)
       : Promise.resolve({ data: [] }),
     companyId
       ? supabase.from('Sangpo_Variation_Order').select('supplier_id, amount').eq('company_id', companyId)
@@ -100,9 +99,6 @@ export default async function Dashboard() {
     const approved = milestoneRows
       .filter((milestone) => milestone.supplier_id === supplier.id)
       .reduce((sum, milestone) => sum + Number(milestone.approved_invoice_total || 0), 0);
-    const paid = milestoneRows
-      .filter((milestone) => milestone.supplier_id === supplier.id)
-      .reduce((sum, milestone) => sum + Number(milestone.manual_paid_total || 0), 0);
     const voTotal = voRows
       .filter((vo) => vo.supplier_id === supplier.id)
       .reduce((sum, vo) => sum + Number(vo.amount || 0), 0);
@@ -116,7 +112,6 @@ export default async function Dashboard() {
       name: supplier.name,
       awarded,
       approved,
-      paid,
       balance,
       voTotal,
       approvedPercent,
@@ -208,7 +203,7 @@ export default async function Dashboard() {
               <SnapshotRow label="Project Budget" value={formatCurrency(projectRecord?.overall_budget || 0)} />
               <SnapshotRow label="Approved Amount" value={formatCurrency(totalApproved)} />
               <SnapshotRow label="VO Total" value={formatCurrency(totalVo)} />
-              <SnapshotRow label="Manual Paid" value={formatCurrency(supplierCards.reduce((sum, item) => sum + item.paid, 0))} />
+              <SnapshotRow label="Milestones" value={String(milestoneRows.length)} />
             </div>
           </div>
 
@@ -245,7 +240,6 @@ function SupplierProgressCard({
     name: string;
     awarded: number;
     approved: number;
-    paid: number;
     balance: number;
     voTotal: number;
     approvedPercent: number;

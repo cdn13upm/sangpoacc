@@ -35,7 +35,8 @@ type Milestone = {
   description: string | null;
   milestone_amount: number;
   approved_invoice_total: number;
-  manual_paid_total: number;
+  payment_date: string | null;
+  payment_reference: string | null;
   sort_order: number;
   status: string;
   Sangpo_Supplier?: SupplierOption | SupplierOption[] | null;
@@ -48,6 +49,8 @@ type VariationOrder = {
   vo_number: string;
   description: string | null;
   amount: number;
+  payment_date: string | null;
+  payment_reference: string | null;
   status: string;
   Sangpo_Supplier?: { name: string } | { name: string }[] | null;
 };
@@ -58,7 +61,8 @@ type MilestoneFormState = {
   description: string;
   milestone_amount: string;
   approved_invoice_total: string;
-  manual_paid_total: string;
+  payment_date: string;
+  payment_reference: string;
   sort_order: string;
   status: string;
 };
@@ -69,6 +73,8 @@ type VoFormState = {
   vo_number: string;
   description: string;
   amount: string;
+  payment_date: string;
+  payment_reference: string;
   status: string;
 };
 
@@ -78,7 +84,8 @@ const emptyMilestoneForm: MilestoneFormState = {
   description: '',
   milestone_amount: '',
   approved_invoice_total: '',
-  manual_paid_total: '',
+  payment_date: '',
+  payment_reference: '',
   sort_order: '0',
   status: 'draft',
 };
@@ -89,6 +96,8 @@ const emptyVoForm: VoFormState = {
   vo_number: '',
   description: '',
   amount: '',
+  payment_date: '',
+  payment_reference: '',
   status: 'draft',
 };
 
@@ -104,6 +113,15 @@ function getSupplierName(value: Milestone['Sangpo_Supplier'] | VariationOrder['S
   if (!value) return '-';
   if (Array.isArray(value)) return value[0]?.name || '-';
   return value.name || '-';
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('en-MY', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(value));
 }
 
 export default function LegacyMilestonesPage() {
@@ -187,7 +205,8 @@ export default function LegacyMilestonesPage() {
       description: milestone.description || '',
       milestone_amount: String(milestone.milestone_amount || 0),
       approved_invoice_total: String(milestone.approved_invoice_total || 0),
-      manual_paid_total: String(milestone.manual_paid_total || 0),
+      payment_date: milestone.payment_date || '',
+      payment_reference: milestone.payment_reference || '',
       sort_order: String(milestone.sort_order || 0),
       status: milestone.status || 'draft',
     });
@@ -201,6 +220,8 @@ export default function LegacyMilestonesPage() {
       vo_number: item.vo_number || '',
       description: item.description || '',
       amount: String(item.amount || 0),
+      payment_date: item.payment_date || '',
+      payment_reference: item.payment_reference || '',
       status: item.status || 'draft',
     });
   }
@@ -346,8 +367,11 @@ export default function LegacyMilestonesPage() {
               <Field label="Approved Invoice Total">
                 <input type="number" min="0" step="0.01" value={milestoneForm.approved_invoice_total} onChange={(e) => setMilestoneForm({ ...milestoneForm, approved_invoice_total: e.target.value })} style={inputStyle} />
               </Field>
-              <Field label="Manual Paid Total">
-                <input type="number" min="0" step="0.01" value={milestoneForm.manual_paid_total} onChange={(e) => setMilestoneForm({ ...milestoneForm, manual_paid_total: e.target.value })} style={inputStyle} />
+              <Field label="Payment Date">
+                <input type="date" value={milestoneForm.payment_date} onChange={(e) => setMilestoneForm({ ...milestoneForm, payment_date: e.target.value })} style={inputStyle} />
+              </Field>
+              <Field label="Payment Reference">
+                <input value={milestoneForm.payment_reference} onChange={(e) => setMilestoneForm({ ...milestoneForm, payment_reference: e.target.value })} style={inputStyle} />
               </Field>
               <Field label="Description">
                 <textarea rows={3} value={milestoneForm.description} onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })} style={textareaStyle} />
@@ -395,6 +419,12 @@ export default function LegacyMilestonesPage() {
               <Field label="VO Amount">
                 <input type="number" min="0" step="0.01" value={voForm.amount} onChange={(e) => setVoForm({ ...voForm, amount: e.target.value })} style={inputStyle} />
               </Field>
+              <Field label="Payment Date">
+                <input type="date" value={voForm.payment_date} onChange={(e) => setVoForm({ ...voForm, payment_date: e.target.value })} style={inputStyle} />
+              </Field>
+              <Field label="Payment Reference">
+                <input value={voForm.payment_reference} onChange={(e) => setVoForm({ ...voForm, payment_reference: e.target.value })} style={inputStyle} />
+              </Field>
               <Field label="Description">
                 <textarea rows={3} value={voForm.description} onChange={(e) => setVoForm({ ...voForm, description: e.target.value })} style={textareaStyle} />
               </Field>
@@ -415,14 +445,15 @@ export default function LegacyMilestonesPage() {
 
       <Panel title="Milestone Summary">
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '900px' : '760px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1040px' : '900px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>Supplier</HeaderCell>
                 <HeaderCell>Milestone</HeaderCell>
                 <HeaderCell>Milestone Amount</HeaderCell>
                 <HeaderCell>Approved Invoice</HeaderCell>
-                <HeaderCell>Manual Paid</HeaderCell>
+                <HeaderCell>Payment Date</HeaderCell>
+                <HeaderCell>Reference</HeaderCell>
                 <HeaderCell>Balance</HeaderCell>
                 {isAdmin && <HeaderCell>Actions</HeaderCell>}
               </tr>
@@ -430,7 +461,7 @@ export default function LegacyMilestonesPage() {
             <tbody>
               {milestones.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 7 : 6} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
+                  <td colSpan={isAdmin ? 8 : 7} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
                     No milestones yet.
                   </td>
                 </tr>
@@ -443,7 +474,8 @@ export default function LegacyMilestonesPage() {
                       <BodyCell>{milestone.title}</BodyCell>
                       <BodyCell>{formatCurrency(milestone.milestone_amount)}</BodyCell>
                       <BodyCell>{formatCurrency(milestone.approved_invoice_total)}</BodyCell>
-                      <BodyCell>{formatCurrency(milestone.manual_paid_total)}</BodyCell>
+                    <BodyCell>{formatDate(milestone.payment_date)}</BodyCell>
+                    <BodyCell>{milestone.payment_reference || '-'}</BodyCell>
                       <BodyCell>{formatCurrency(balance)}</BodyCell>
                       {isAdmin && (
                         <BodyCell>
@@ -479,12 +511,14 @@ export default function LegacyMilestonesPage() {
 
       <Panel title="Variation Orders">
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '860px' : '700px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1020px' : '860px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>Supplier</HeaderCell>
                 <HeaderCell>VO Number</HeaderCell>
                 <HeaderCell>Amount</HeaderCell>
+                <HeaderCell>Payment Date</HeaderCell>
+                <HeaderCell>Reference</HeaderCell>
                 <HeaderCell>Status</HeaderCell>
                 <HeaderCell>Description</HeaderCell>
                 {isAdmin && <HeaderCell>Actions</HeaderCell>}
@@ -493,7 +527,7 @@ export default function LegacyMilestonesPage() {
             <tbody>
               {variationOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
+                  <td colSpan={isAdmin ? 8 : 7} style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}>
                     No variation orders yet.
                   </td>
                 </tr>
@@ -503,6 +537,8 @@ export default function LegacyMilestonesPage() {
                     <BodyCell>{getSupplierName(item.Sangpo_Supplier)}</BodyCell>
                     <BodyCell>{item.vo_number}</BodyCell>
                     <BodyCell>{formatCurrency(item.amount)}</BodyCell>
+                    <BodyCell>{formatDate(item.payment_date)}</BodyCell>
+                    <BodyCell>{item.payment_reference || '-'}</BodyCell>
                     <BodyCell>{item.status}</BodyCell>
                     <BodyCell>{item.description || '-'}</BodyCell>
                     {isAdmin && (

@@ -35,6 +35,8 @@ type VariationOrder = {
   vo_number: string;
   description: string | null;
   amount: number;
+  payment_date: string | null;
+  payment_reference: string | null;
   status: string;
   created_at: string;
   Sangpo_Supplier?: { name: string } | { name: string }[] | null;
@@ -45,6 +47,8 @@ const emptyVoForm = {
   vo_number: '',
   description: '',
   amount: '',
+  payment_date: '',
+  payment_reference: '',
   status: 'draft',
 };
 
@@ -215,6 +219,21 @@ export default function VariationOrdersPage() {
                   style={inputStyle}
                 />
               </Field>
+              <Field label="Payment Date">
+                <input
+                  type="date"
+                  value={formData.payment_date}
+                  onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+                  style={inputStyle}
+                />
+              </Field>
+              <Field label="Payment Reference">
+                <input
+                  value={formData.payment_reference}
+                  onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
+                  style={inputStyle}
+                />
+              </Field>
               <Field label="Status">
                 <select
                   value={formData.status}
@@ -258,12 +277,14 @@ export default function VariationOrdersPage() {
       <div style={panelStyle}>
         <h2 style={panelTitleStyle}>VO Register</h2>
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '820px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '980px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>VO Number</HeaderCell>
                 <HeaderCell>Supplier</HeaderCell>
                 <HeaderCell>Amount</HeaderCell>
+                <HeaderCell>Payment Date</HeaderCell>
+                <HeaderCell>Reference</HeaderCell>
                 <HeaderCell>Status</HeaderCell>
                 <HeaderCell>Created</HeaderCell>
                 <HeaderCell>Description</HeaderCell>
@@ -272,7 +293,7 @@ export default function VariationOrdersPage() {
             <tbody>
               {variationOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
+                  <td colSpan={8} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
                     No variation orders yet.
                   </td>
                 </tr>
@@ -282,6 +303,8 @@ export default function VariationOrdersPage() {
                     <BodyCell>{item.vo_number}</BodyCell>
                     <BodyCell>{getSupplierName(item.Sangpo_Supplier)}</BodyCell>
                     <BodyCell>{formatCurrency(item.amount)}</BodyCell>
+                    <BodyCell>{formatDate(item.payment_date)}</BodyCell>
+                    <BodyCell>{item.payment_reference || '-'}</BodyCell>
                     <BodyCell>
                       <span
                         style={{
