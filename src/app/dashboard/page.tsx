@@ -25,7 +25,9 @@ export default async function Dashboard() {
     .single() as { data: SangpoUser | null };
 
   const cards = [
+    { title: 'Project Budget', href: '/dashboard/project' },
     { title: 'Suppliers', href: '/dashboard/suppliers' },
+    { title: 'Milestones & VO', href: '/dashboard/milestones' },
     { title: 'Documents', href: '/dashboard/documents' },
     { title: 'Payments', href: '/dashboard/payments' },
     { title: 'Certificates', href: '/dashboard/certificates' },

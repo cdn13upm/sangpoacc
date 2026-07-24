@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 type Supplier = {
@@ -9,50 +10,84 @@ type Supplier = {
   email: string | null;
   phone: string | null;
   address: string | null;
+  tax_id: string | null;
+  contract_reference: string | null;
+  contract_award_value: number | null;
+  contract_award_date: string | null;
+  scope_of_work: string | null;
+  remark: string | null;
 };
 
+type FormState = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  tax_id: string;
+  contract_reference: string;
+  contract_award_value: string;
+  contract_award_date: string;
+  scope_of_work: string;
+  remark: string;
+};
+
+const emptyForm: FormState = {
+  name: '',
+  email: '',
+  phone: '',
+  address: '',
+  tax_id: '',
+  contract_reference: '',
+  contract_award_value: '',
+  contract_award_date: '',
+  scope_of_work: '',
+  remark: '',
+};
+
+function formatCurrency(value: number | null | undefined) {
+  return new Intl.NumberFormat('en-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    minimumFractionDigits: 2,
+  }).format(Number(value || 0));
+}
+
 export default function SuppliersPage() {
+  const supabase = createClient();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: ''
-  });
-
-  const supabase = createClient();
+  const [formError, setFormError] = useState('');
+  const [formData, setFormData] = useState<FormState>(emptyForm);
 
   useEffect(() => {
     async function init() {
-      await fetchUserRole();
-      await fetchSuppliers();
+      await Promise.all([fetchUserRole(), fetchSuppliers()]);
     }
+
     init();
   }, []);
 
   async function fetchUserRole() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
-      .from('Sangpo_User')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
+    const { data } = await supabase.from('Sangpo_User').select('role').eq('id', user.id).single();
     setUserRole(data?.role || null);
   }
 
   async function fetchSuppliers() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get user's company
       const { data: sangpoUser } = await supabase
         .from('Sangpo_User')
         .select('company_id')
@@ -64,9 +99,10 @@ export default function SuppliersPage() {
       const { data } = await supabase
         .from('Sangpo_Supplier')
         .select('*')
-        .eq('company_id', sangpoUser.company_id);
+        .eq('company_id', sangpoUser.company_id)
+        .order('created_at', { ascending: false });
 
-      setSuppliers(data || []);
+      setSuppliers((data || []) as Supplier[]);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
     } finally {
@@ -74,85 +110,106 @@ export default function SuppliersPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  function resetForm() {
+    setFormData(emptyForm);
+    setEditingSupplier(null);
+    setFormError('');
+    setShowModal(false);
+  }
 
-      const { data: sangpoUser } = await supabase
-        .from('Sangpo_User')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
+  function openCreateModal() {
+    setFormData(emptyForm);
+    setEditingSupplier(null);
+    setFormError('');
+    setShowModal(true);
+  }
 
-      if (!sangpoUser?.company_id) return;
-
-      if (editingSupplier) {
-        // Update existing supplier
-        await supabase
-          .from('Sangpo_Supplier')
-          .update({
-            name: formData.name,
-            email: formData.email || null,
-            phone: formData.phone || null,
-            address: formData.address || null
-          })
-          .eq('id', editingSupplier.id);
-      } else {
-        // Create new supplier
-        await supabase
-          .from('Sangpo_Supplier')
-          .insert({
-            company_id: sangpoUser.company_id,
-            name: formData.name,
-            email: formData.email || null,
-            phone: formData.phone || null,
-            address: formData.address || null
-          });
-      }
-
-      setShowModal(false);
-      setEditingSupplier(null);
-      setFormData({ name: '', email: '', phone: '', address: '' });
-      await fetchSuppliers();
-    } catch (error) {
-      console.error('Error saving supplier:', error);
-    }
-  };
-
-  const handleEdit = (supplier: Supplier) => {
+  function handleEdit(supplier: Supplier) {
     setEditingSupplier(supplier);
+    setFormError('');
     setFormData({
-      name: supplier.name,
+      name: supplier.name || '',
       email: supplier.email || '',
       phone: supplier.phone || '',
-      address: supplier.address || ''
+      address: supplier.address || '',
+      tax_id: supplier.tax_id || '',
+      contract_reference: supplier.contract_reference || '',
+      contract_award_value: supplier.contract_award_value?.toString() || '',
+      contract_award_date: supplier.contract_award_date || '',
+      scope_of_work: supplier.scope_of_work || '',
+      remark: supplier.remark || '',
     });
     setShowModal(true);
-  };
+  }
 
-  const handleDelete = async (id: string) => {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setFormError('');
+
+    try {
+      const payload = {
+        ...formData,
+        contract_award_value: formData.contract_award_value || '0',
+      };
+
+      const response = editingSupplier
+        ? await fetch('/api/suppliers', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingSupplier.id, ...payload }),
+          })
+        : await fetch('/api/suppliers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save supplier');
+      }
+
+      resetForm();
+      await fetchSuppliers();
+    } catch (error: any) {
+      console.error('Error saving supplier:', error);
+      setFormError(error.message || 'Failed to save supplier');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this supplier?')) return;
 
     try {
-      await supabase.from('Sangpo_Supplier').delete().eq('id', id);
+      const response = await fetch('/api/suppliers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete supplier');
+      }
+
       await fetchSuppliers();
     } catch (error) {
       console.error('Error deleting supplier:', error);
     }
-  };
+  }
 
   const isAdmin = userRole === 'admin';
+  const totalAwarded = useMemo(
+    () => suppliers.reduce((sum, supplier) => sum + Number(supplier.contract_award_value || 0), 0),
+    [suppliers]
+  );
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh'
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <p style={{ color: '#6b7280', fontSize: '1.1rem' }}>Loading suppliers...</p>
       </div>
     );
@@ -160,28 +217,14 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '2rem'
-      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: '800',
-            color: '#111827',
-            marginBottom: '0.35rem'
-          }}>
-            Suppliers
-          </h1>
-          <p style={{ color: '#6b7280', margin: 0 }}>
-            Manage your supplier list
-          </p>
+          <h1 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>Suppliers</h1>
+          <p style={{ color: '#6b7280', margin: 0 }}>Manage supplier details, awarded contract, scope of work, and remarks.</p>
         </div>
         {isAdmin && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
             style={{
               backgroundColor: '#780000',
               color: 'white',
@@ -191,109 +234,52 @@ export default function SuppliersPage() {
               cursor: 'pointer',
               fontSize: '0.95rem',
               fontWeight: '600',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 6px -1px rgb(120 0 0 / 0.3)'
+              boxShadow: '0 4px 6px -1px rgb(120 0 0 / 0.3)',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#5a0000'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#780000'}
           >
             Add Supplier
           </button>
         )}
       </div>
 
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '0.75rem',
-        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        overflow: 'hidden',
-        border: '1px solid rgba(0,0,0,0.05)'
-      }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <SummaryCard label="Total Suppliers" value={String(suppliers.length)} />
+        <SummaryCard label="Total Awarded Contract" value={formatCurrency(totalAwarded)} />
+      </div>
+
+      <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ backgroundColor: '#f9fafb' }}>
             <tr>
-              <th style={{
-                padding: '1rem 1.5rem',
-                textAlign: 'left',
-                borderBottom: '1px solid #e5e7eb',
-                color: '#374151',
-                fontWeight: '700',
-                fontSize: '0.9rem'
-              }}>
-                Name
-              </th>
-              <th style={{
-                padding: '1rem 1.5rem',
-                textAlign: 'left',
-                borderBottom: '1px solid #e5e7eb',
-                color: '#374151',
-                fontWeight: '700',
-                fontSize: '0.9rem'
-              }}>
-                Email
-              </th>
-              <th style={{
-                padding: '1rem 1.5rem',
-                textAlign: 'left',
-                borderBottom: '1px solid #e5e7eb',
-                color: '#374151',
-                fontWeight: '700',
-                fontSize: '0.9rem'
-              }}>
-                Phone
-              </th>
-              <th style={{
-                padding: '1rem 1.5rem',
-                textAlign: 'left',
-                borderBottom: '1px solid #e5e7eb',
-                color: '#374151',
-                fontWeight: '700',
-                fontSize: '0.9rem'
-              }}>
-                Address
-              </th>
-              {isAdmin && (
-                <th style={{
-                  padding: '1rem 1.5rem',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #e5e7eb',
-                  color: '#374151',
-                  fontWeight: '700',
-                  fontSize: '0.9rem'
-                }}>
-                  Actions
-                </th>
-              )}
+              <HeaderCell>Name</HeaderCell>
+              <HeaderCell>Contract Ref</HeaderCell>
+              <HeaderCell>Award Value</HeaderCell>
+              <HeaderCell>Scope of Work</HeaderCell>
+              <HeaderCell>Remark</HeaderCell>
+              {isAdmin && <HeaderCell>Actions</HeaderCell>}
             </tr>
           </thead>
           <tbody>
             {suppliers.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 5 : 4} style={{
-                  padding: '3rem 1.5rem',
-                  textAlign: 'center',
-                  color: '#6b7280'
-                }}>
-                  No suppliers yet. Add your first one!
+                <td colSpan={isAdmin ? 6 : 5} style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#6b7280' }}>
+                  No suppliers yet. Add your first awarded contractor.
                 </td>
               </tr>
             ) : (
               suppliers.map((supplier) => (
-                <tr key={supplier.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                  <td style={{ padding: '1rem 1.5rem', fontWeight: '500', color: '#111827' }}>
-                    {supplier.name}
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>
-                    {supplier.email || '-'}
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>
-                    {supplier.phone || '-'}
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>
-                    {supplier.address || '-'}
-                  </td>
+                <tr key={supplier.id} style={{ borderBottom: '1px solid #f3f4f6', verticalAlign: 'top' }}>
+                  <BodyCell>
+                    <div style={{ fontWeight: 600, color: '#111827' }}>{supplier.name}</div>
+                    <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '0.35rem' }}>{supplier.email || '-'}</div>
+                    <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>{supplier.phone || '-'}</div>
+                  </BodyCell>
+                  <BodyCell>{supplier.contract_reference || '-'}</BodyCell>
+                  <BodyCell>{formatCurrency(supplier.contract_award_value)}</BodyCell>
+                  <BodyCell>{supplier.scope_of_work || '-'}</BodyCell>
+                  <BodyCell>{supplier.remark || '-'}</BodyCell>
                   {isAdmin && (
-                    <td style={{ padding: '1rem 1.5rem' }}>
+                    <BodyCell>
                       <button
                         onClick={() => handleEdit(supplier)}
                         style={{
@@ -306,10 +292,7 @@ export default function SuppliersPage() {
                           fontSize: '0.85rem',
                           fontWeight: '500',
                           marginRight: '0.5rem',
-                          transition: 'all 0.2s ease'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
                       >
                         Edit
                       </button>
@@ -324,14 +307,11 @@ export default function SuppliersPage() {
                           cursor: 'pointer',
                           fontSize: '0.85rem',
                           fontWeight: '500',
-                          transition: 'all 0.2s ease'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
                       >
                         Delete
                       </button>
-                    </td>
+                    </BodyCell>
                   )}
                 </tr>
               ))
@@ -340,191 +320,52 @@ export default function SuppliersPage() {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            padding: '2rem',
-            borderRadius: '0.75rem',
-            width: '100%',
-            maxWidth: '520px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-          }}>
-            <h2 style={{
-              fontSize: '1.5rem',
-              fontWeight: '800',
-              color: '#111827',
-              marginBottom: '1.5rem'
-            }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', width: '100%', maxWidth: '760px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '1.5rem' }}>
               {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
             </h2>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#780000'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+                <FormField label="Supplier Name">
+                  <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required style={inputStyle} />
+                </FormField>
+                <FormField label="Contract Reference">
+                  <input value={formData.contract_reference} onChange={(e) => setFormData({ ...formData, contract_reference: e.target.value })} style={inputStyle} />
+                </FormField>
+                <FormField label="Email">
+                  <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={inputStyle} />
+                </FormField>
+                <FormField label="Phone">
+                  <input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} style={inputStyle} />
+                </FormField>
+                <FormField label="Tax ID">
+                  <input value={formData.tax_id} onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })} style={inputStyle} />
+                </FormField>
+                <FormField label="Award Contract Value">
+                  <input type="number" min="0" step="0.01" value={formData.contract_award_value} onChange={(e) => setFormData({ ...formData, contract_award_value: e.target.value })} style={inputStyle} />
+                </FormField>
+                <FormField label="Award Date">
+                  <input type="date" value={formData.contract_award_date} onChange={(e) => setFormData({ ...formData, contract_award_date: e.target.value })} style={inputStyle} />
+                </FormField>
+                <FormField label="Address">
+                  <input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} style={inputStyle} />
+                </FormField>
               </div>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#780000'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  Phone
-                </label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#780000'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  Address
-                </label>
-                <textarea
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#780000'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingSupplier(null);
-                    setFormData({ name: '', email: '', phone: '', address: '' });
-                  }}
-                  style={{
-                    padding: '0.7rem 1.4rem',
-                    borderRadius: '0.5rem',
-                    border: '2px solid #e5e7eb',
-                    backgroundColor: 'white',
-                    color: '#374151',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                    fontWeight: '600',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                >
+              <FormField label="Scope of Work">
+                <textarea rows={4} value={formData.scope_of_work} onChange={(e) => setFormData({ ...formData, scope_of_work: e.target.value })} style={textareaStyle} />
+              </FormField>
+              <FormField label="Remark">
+                <textarea rows={3} value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} style={textareaStyle} />
+              </FormField>
+              {formError && <p style={{ color: '#dc2626', fontSize: '0.9rem', margin: 0 }}>{formError}</p>}
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={resetForm} style={{ padding: '0.7rem 1.4rem', borderRadius: '0.5rem', border: '2px solid #e5e7eb', backgroundColor: 'white', color: '#374151', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600' }}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  style={{
-                    backgroundColor: '#780000',
-                    color: 'white',
-                    padding: '0.7rem 1.4rem',
-                    borderRadius: '0.5rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                    fontWeight: '600',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 6px -1px rgb(120 0 0 / 0.3)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#5a0000'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#780000'}
-                >
-                  Save
+                <button type="submit" disabled={saving} style={{ backgroundColor: '#780000', color: 'white', padding: '0.7rem 1.4rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '600', opacity: saving ? 0.7 : 1 }}>
+                  {saving ? 'Saving...' : 'Save Supplier'}
                 </button>
               </div>
             </form>
@@ -534,3 +375,48 @@ export default function SuppliersPage() {
     </div>
   );
 }
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
+      <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0, marginBottom: '0.4rem' }}>{label}</p>
+      <p style={{ color: '#111827', fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>{value}</p>
+    </div>
+  );
+}
+
+function HeaderCell({ children }: { children: ReactNode }) {
+  return (
+    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb', color: '#374151', fontWeight: '700', fontSize: '0.9rem' }}>
+      {children}
+    </th>
+  );
+}
+
+function BodyCell({ children }: { children: ReactNode }) {
+  return <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>{children}</td>;
+}
+
+function FormField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle: CSSProperties = {
+  width: '100%',
+  padding: '0.75rem 1rem',
+  border: '2px solid #e5e7eb',
+  borderRadius: '0.5rem',
+  fontSize: '1rem',
+  outline: 'none',
+};
+
+const textareaStyle: CSSProperties = {
+  ...inputStyle,
+  resize: 'vertical',
+  fontFamily: 'inherit',
+};

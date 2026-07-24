@@ -23,7 +23,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/dashboard/project', label: 'Project Budget' },
     { href: '/dashboard/suppliers', label: 'Suppliers' },
+    { href: '/dashboard/milestones', label: 'Milestones & VO' },
     { href: '/dashboard/documents', label: 'Documents' },
     { href: '/dashboard/payments', label: 'Payments' },
     { href: '/dashboard/certificates', label: 'Certificates' },
