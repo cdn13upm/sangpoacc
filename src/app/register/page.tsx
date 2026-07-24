@@ -99,6 +99,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('Form submit event triggered!');
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -214,6 +215,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
       <button
         type="submit"
         disabled={loading}
+        onClick={() => console.log('Register button clicked!')}
         style={{
           width: '100%',
           backgroundColor: '#2563eb',
