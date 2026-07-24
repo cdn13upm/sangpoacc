@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Logo and Title */}
         <div style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img
-            src="https://i.imgur.com/3QwX7aL.png"
+            src="/logo.png"
             alt="Sangpo Buddhist Society"
             style={{ width: '48px', height: '48px' }}
           />
@@ -85,14 +85,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 fontSize: '0.95rem',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-              }}
             >
               {item.label}
             </Link>
@@ -129,8 +121,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
               fontSize: '0.9rem',
               transition: 'all 0.2s ease'
             }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
             >
               Sign Out
             </button>

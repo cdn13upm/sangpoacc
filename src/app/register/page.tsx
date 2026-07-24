@@ -80,7 +80,7 @@ export default function RegisterPage() {
       }}>
         <div style={{ marginBottom: '2rem' }}>
           <img
-            src="https://i.imgur.com/3QwX7aL.png"
+            src="/logo.png"
             alt="Sangpo Buddhist Society"
             style={{ width: '120px', height: '120px', marginBottom: '1rem' }}
           />

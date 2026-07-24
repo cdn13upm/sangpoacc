@@ -68,14 +68,6 @@ export default async function Dashboard() {
               transition: 'all 0.2s ease',
               border: '1px solid rgba(0,0,0,0.05)'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
           >
             <h2 style={{
               fontSize: '1.35rem',

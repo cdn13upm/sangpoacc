@@ -87,7 +87,7 @@ export default function LoginPage() {
         }} />
         <div style={{ marginBottom: '2rem' }}>
           <img
-            src="https://i.imgur.com/3QwX7aL.png"
+            src="/logo.png"
             alt="Sangpo Buddhist Society"
             style={{ width: '140px', height: '140px', marginBottom: '1rem' }}
           />
