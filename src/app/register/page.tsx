@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const SECRET_CODE = 'S@ngpo9088';
 
@@ -65,108 +66,239 @@ export default function RegisterPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem',
-      backgroundColor: '#f3f4f6'
+      background: 'linear-gradient(135deg, #780000 0%, #2d0000 100%)',
+      padding: '2rem'
     }}>
       <div style={{
         backgroundColor: 'white',
-        padding: '2rem',
-        borderRadius: '0.5rem',
-        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-        maxWidth: '400px',
-        width: '100%'
+        padding: '3rem 2.5rem',
+        borderRadius: '1rem',
+        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 10px 10px -5px rgb(0 0 0 / 0.2)',
+        width: '100%',
+        maxWidth: '480px',
+        textAlign: 'center'
       }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <img
+            src="https://i.imgur.com/3QwX7aL.png"
+            alt="Sangpo Buddhist Society"
+            style={{ width: '120px', height: '120px', marginBottom: '1rem' }}
+          />
+          <h1 style={{
+            fontSize: '1.75rem',
+            fontWeight: '800',
+            color: '#780000',
+            marginBottom: '0.5rem'
+          }}>
+            Register New User
+          </h1>
+        </div>
+
         {step === 'code' ? (
-          <form onSubmit={handleCodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h1 style={{ margin: 0, marginBottom: '1rem', textAlign: 'center' }}>Enter Secret Code</h1>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Secret Code</label>
+          <form onSubmit={handleCodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ textAlign: 'left' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Secret Code
+              </label>
               <input
                 type="password"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  borderRadius: '0.5rem',
+                  border: '2px solid #e5e7eb',
+                  padding: '0.875rem 1rem',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.2s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#780000'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               />
             </div>
-            {error && <p style={{ color: '#ef4444', margin: 0 }}>{error}</p>}
+
+            {error && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{error}</p>}
+
             <button
               type="submit"
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                backgroundColor: '#2563eb',
+                backgroundColor: '#780000',
                 color: 'white',
+                padding: '0.95rem 1.25rem',
+                borderRadius: '0.5rem',
                 border: 'none',
-                borderRadius: '0.25rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '700',
+                letterSpacing: '0.025em',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 6px -1px rgb(120 0 0 / 0.4)'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#5a0000'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#780000'}
             >
               Continue
             </button>
-            <p style={{ textAlign: 'center', margin: 0 }}>
-              <a href="/login" style={{ color: '#2563eb' }}>Already have an account? Login</a>
+
+            <p style={{ textAlign: 'center', marginTop: '1.5rem', marginBottom: 0 }}>
+              <Link href="/login" style={{ color: '#780000', textDecoration: 'none', fontWeight: '700' }}>
+                Already have an account? Login
+              </Link>
             </p>
           </form>
         ) : (
-          <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h1 style={{ margin: 0, marginBottom: '1rem', textAlign: 'center' }}>Register New User</h1>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Company Name</label>
+          <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            <div style={{ textAlign: 'left' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Company Name
+              </label>
               <input
                 type="text"
                 value={formData.companyName}
                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                 required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#780000'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
+
+            <div style={{ textAlign: 'left' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Email
+              </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#780000'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
+
+            <div style={{ textAlign: 'left' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Password
+              </label>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
                 minLength={6}
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#780000'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Role</label>
+
+            <div style={{ textAlign: 'left' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Role
+              </label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'manager' })}
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease',
+                  backgroundColor: 'white'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#780000'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
               </select>
             </div>
-            {error && <p style={{ color: '#ef4444', margin: 0 }}>{error}</p>}
+
+            {error && <p style={{ color: '#dc2626', fontSize: '0.9rem', marginBottom: 0 }}>{error}</p>}
+
             <button
               type="submit"
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                backgroundColor: '#2563eb',
+                backgroundColor: '#780000',
                 color: 'white',
+                padding: '0.95rem 1.25rem',
+                borderRadius: '0.5rem',
                 border: 'none',
-                borderRadius: '0.25rem',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.5 : 1
+                fontSize: '1rem',
+                fontWeight: '700',
+                letterSpacing: '0.025em',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 6px -1px rgb(120 0 0 / 0.4)',
+                opacity: loading ? 0.7 : 1
               }}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5a0000')}
+              onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#780000')}
             >
               {loading ? 'Registering...' : 'Register'}
             </button>

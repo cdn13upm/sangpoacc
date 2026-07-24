@@ -21,71 +21,127 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('id', user.id)
     .single() as { data: SangpoUser | null };
 
-  const isAdmin = sangpoUser?.role === 'admin';
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/dashboard/suppliers', label: 'Suppliers' },
+    { href: '/dashboard/documents', label: 'Documents' },
+    { href: '/dashboard/payments', label: 'Payments' },
+    { href: '/dashboard/certificates', label: 'Certificates' },
+  ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       {/* Sidebar */}
       <aside style={{
-        width: '250px',
-        backgroundColor: '#f3f4f6',
-        padding: '1.5rem',
-        borderRight: '1px solid #e5e7eb'
+        width: '260px',
+        background: 'linear-gradient(180deg, #780000 0%, #4a0000 100%)',
+        padding: '2rem 1.25rem',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '4px 0 15px rgba(0, 0, 0, 0.1)'
       }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-            SangpoAcc
-          </h2>
+        {/* Logo and Title */}
+        <div style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img
+            src="https://i.imgur.com/3QwX7aL.png"
+            alt="Sangpo Buddhist Society"
+            style={{ width: '48px', height: '48px' }}
+          />
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '800',
+              color: 'white',
+              margin: 0,
+              lineHeight: '1.2'
+            }}>
+              SangpoAcc
+            </h2>
+            <p style={{
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '0.75rem',
+              margin: 0,
+              marginTop: '0.15rem'
+            }}>
+              Account Tracking
+            </p>
+          </div>
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <Link href="/dashboard" style={sidebarLinkStyle}>
-            Dashboard
-          </Link>
-          <Link href="/dashboard/suppliers" style={sidebarLinkStyle}>
-            Suppliers
-          </Link>
-          <Link href="/dashboard/documents" style={sidebarLinkStyle}>
-            Documents
-          </Link>
-          <Link href="/dashboard/payments" style={sidebarLinkStyle}>
-            Payments
-          </Link>
-          <Link href="/dashboard/certificates" style={sidebarLinkStyle}>
-            Certificates
-          </Link>
+        {/* Navigation */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem 1rem',
+                borderRadius: '0.5rem',
+                color: 'rgba(255,255,255,0.85)',
+                textDecoration: 'none',
+                fontWeight: '500',
+                fontSize: '0.95rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
-        <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+        {/* User Info and Logout */}
+        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', margin: 0, marginBottom: '0.25rem' }}>
+              Role
+            </p>
+            <p style={{
+              color: 'white',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              margin: 0,
+              textTransform: 'capitalize'
+            }}>
+              {sangpoUser?.role || 'User'}
+            </p>
+          </div>
           <form action="/auth/signout" method="post">
             <button style={{
               width: '100%',
               textAlign: 'left',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
               border: 'none',
-              backgroundColor: 'transparent',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              color: 'white',
               cursor: 'pointer',
-              color: '#4b5563'
-            }}>
-              Logout
+              fontWeight: '500',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease'
+            }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+            >
+              Sign Out
             </button>
           </form>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '2rem' }}>
+      <main style={{ flex: 1, padding: '2.5rem' }}>
         {children}
       </main>
     </div>
   );
 }
-
-const sidebarLinkStyle = {
-  padding: '0.5rem 0.75rem',
-  borderRadius: '0.375rem',
-  textDecoration: 'none',
-  color: '#374151',
-  transition: 'background-color 0.2s'
-};
