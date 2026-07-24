@@ -103,6 +103,8 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
     setLoading(true);
     setError('');
 
+    console.log('Submitting registration form:', { email, password, companyName, role });
+
     try {
       const res = await fetch('/api/register', {
         method: 'POST',
@@ -110,13 +112,19 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ email, password, companyName, role })
       });
 
+      console.log('Response status:', res.status);
+
       if (!res.ok) {
         const data = await res.json();
+        console.error('Error response:', data);
         throw new Error(data.error || 'Registration failed');
       }
 
+      const data = await res.json();
+      console.log('Success response:', data);
       onSuccess();
     } catch (err: any) {
+      console.error('Registration error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
