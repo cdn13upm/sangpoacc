@@ -23,7 +23,7 @@ export default async function Dashboard() {
           <h1 style={{ fontSize: "1.875rem", fontWeight: "bold" }}>Dashboard</h1>
           {sangpoUser && (
             <p style={{ color: "#4b5563" }}>
-              {sangpoUser.Sangpo_Company?.name || "No company assigned"} • {sangpoUser.role}
+              {sangpoUser.Sangpo_Company?.[0]?.name || "No company assigned"} • {sangpoUser.role}
             </p>
           )}
         </div>
