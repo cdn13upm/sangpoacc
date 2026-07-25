@@ -23,8 +23,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     .eq('id', user.id)
     .single() as { data: SangpoUser | null };
 
+  const isAdmin = sangpoUser?.role === 'admin';
+
   const navItems = [
     { href: '/dashboard', label: 'Dashboard' },
+    ...(isAdmin ? [{ href: '/dashboard/company', label: 'Company Admin' }] : []),
     { href: '/dashboard/project', label: 'Project Budget' },
     { href: '/dashboard/suppliers', label: 'Suppliers' },
     { href: '/dashboard/milestones', label: 'Milestones' },
