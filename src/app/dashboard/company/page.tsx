@@ -65,6 +65,7 @@ export default function CompanyAdminPage() {
   const [savingCompany, setSavingCompany] = useState(false);
   const [creatingCompany, setCreatingCompany] = useState(false);
   const [savingMappingId, setSavingMappingId] = useState<string | null>(null);
+  const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -82,7 +83,7 @@ export default function CompanyAdminPage() {
     });
   }, [selectedCompanyId, companies]);
 
-  async function loadData() {
+  async function loadData(preferredCompanyId?: string) {
     try {
       setLoading(true);
       const response = await fetch('/api/company-admin');
@@ -95,7 +96,7 @@ export default function CompanyAdminPage() {
       setCompanies(companyRows);
       setUsers(userRows);
       setCurrentCompanyId(result.currentCompanyId || '');
-      setSelectedCompanyId(result.currentCompanyId || companyRows[0]?.id || '');
+      setSelectedCompanyId(preferredCompanyId || result.currentCompanyId || companyRows[0]?.id || '');
       setMappingDrafts(
         Object.fromEntries(
           userRows.map((user: UserRecord) => [
@@ -134,7 +135,7 @@ export default function CompanyAdminPage() {
       if (!response.ok) throw new Error(result.error || 'Failed to save company');
 
       setNotice('Company profile updated.');
-      await loadData();
+      await loadData(selectedCompanyId);
     } catch (saveError: any) {
       setError(saveError.message || 'Failed to save company');
     } finally {
@@ -159,7 +160,7 @@ export default function CompanyAdminPage() {
 
       setCreateForm(emptyCompanyForm);
       setNotice('Company profile created.');
-      await loadData();
+      await loadData(result.company?.id);
       if (result.company?.id) {
         setSelectedCompanyId(result.company.id);
       }
@@ -198,6 +199,37 @@ export default function CompanyAdminPage() {
       setError(mappingError.message || 'Failed to update user mapping');
     } finally {
       setSavingMappingId(null);
+    }
+  }
+
+  function handleCompanyEdit(companyId: string) {
+    setSelectedCompanyId(companyId);
+    setNotice('');
+    setError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleCompanyDelete(company: CompanyRecord) {
+    const confirmed = window.confirm(`Delete company "${company.name}"? This only works when no users or project records are still linked.`);
+    if (!confirmed) return;
+
+    setDeletingCompanyId(company.id);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await fetch(`/api/company-admin?id=${company.id}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete company');
+
+      setNotice('Company deleted.');
+      await loadData();
+    } catch (deleteError: any) {
+      setError(deleteError.message || 'Failed to delete company');
+    } finally {
+      setDeletingCompanyId(null);
     }
   }
 
@@ -325,6 +357,75 @@ export default function CompanyAdminPage() {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div style={{ height: '1rem' }} />
+
+      <div style={panelStyle}>
+        <h2 style={panelTitleStyle}>Company List</h2>
+        <div style={tableWrapStyle}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '980px' }}>
+            <thead style={{ backgroundColor: '#f9fafb' }}>
+              <tr>
+                <HeaderCell>Company</HeaderCell>
+                <HeaderCell>Email</HeaderCell>
+                <HeaderCell>Phone</HeaderCell>
+                <HeaderCell>Address</HeaderCell>
+                <HeaderCell>Status</HeaderCell>
+                <HeaderCell>Actions</HeaderCell>
+              </tr>
+            </thead>
+            <tbody>
+              {companies.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
+                    No companies found.
+                  </td>
+                </tr>
+              ) : (
+                companies.map((company) => {
+                  const isCurrent = company.id === currentCompanyId;
+                  const isSelected = company.id === selectedCompanyId;
+
+                  return (
+                    <tr key={company.id} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: isSelected ? '#fff8f7' : 'transparent' }}>
+                      <BodyCell>
+                        <div style={{ fontWeight: 700, color: colors.ink }}>{company.name}</div>
+                      </BodyCell>
+                      <BodyCell>{company.email || '-'}</BodyCell>
+                      <BodyCell>{company.phone || '-'}</BodyCell>
+                      <BodyCell>{company.address || '-'}</BodyCell>
+                      <BodyCell>{isCurrent ? 'Current company' : isSelected ? 'Selected' : '-'}</BodyCell>
+                      <BodyCell>
+                        <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleCompanyEdit(company.id)}
+                            style={secondaryButtonStyle}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCompanyDelete(company)}
+                            disabled={deletingCompanyId === company.id || isCurrent}
+                            style={{
+                              ...secondaryButtonStyle,
+                              color: isCurrent ? colors.muted : '#b91c1c',
+                              opacity: deletingCompanyId === company.id || isCurrent ? 0.6 : 1,
+                            }}
+                          >
+                            {deletingCompanyId === company.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </BodyCell>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

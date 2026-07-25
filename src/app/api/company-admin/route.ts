@@ -197,3 +197,71 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: error.message || 'Failed to update company admin data' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const authorization = await getAuthorizedAdmin();
+    if ('error' in authorization) {
+      return NextResponse.json({ error: authorization.error }, { status: authorization.status });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('id');
+
+    if (!companyId) {
+      return NextResponse.json({ error: 'Company id is required' }, { status: 400 });
+    }
+
+    if (companyId === authorization.currentCompanyId) {
+      return NextResponse.json({ error: 'You cannot delete your current company' }, { status: 400 });
+    }
+
+    const [
+      { count: linkedUsers, error: usersError },
+      { count: projectCount, error: projectError },
+      { count: supplierCount, error: supplierError },
+      { count: milestoneCount, error: milestoneError },
+      { count: voCount, error: voError },
+      { count: certificateCount, error: certificateError },
+    ] = await Promise.all([
+      supabaseAdmin.from('Sangpo_User').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabaseAdmin.from('Sangpo_Project').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabaseAdmin.from('Sangpo_Supplier').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabaseAdmin.from('Sangpo_Milestone').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabaseAdmin.from('Sangpo_Variation_Order').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabaseAdmin.from('Sangpo_Certificate').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+    ]);
+
+    const firstError = usersError || projectError || supplierError || milestoneError || voError || certificateError;
+    if (firstError) {
+      return NextResponse.json({ error: firstError.message }, { status: 400 });
+    }
+
+    const totalLinkedRecords =
+      (linkedUsers || 0) +
+      (projectCount || 0) +
+      (supplierCount || 0) +
+      (milestoneCount || 0) +
+      (voCount || 0) +
+      (certificateCount || 0);
+
+    if (totalLinkedRecords > 0) {
+      return NextResponse.json(
+        {
+          error: 'This company still has linked users or project records. Move or clean those records first before deleting.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabaseAdmin.from('Sangpo_Company').delete().eq('id', companyId);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Failed to delete company' }, { status: 500 });
+  }
+}
