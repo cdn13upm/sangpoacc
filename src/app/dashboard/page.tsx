@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import {
@@ -302,6 +303,7 @@ function SupplierProgressCard({
   supplier,
 }: {
   supplier: {
+    id: string;
     name: string;
     awarded: number;
     approved: number;
@@ -353,16 +355,22 @@ function SupplierProgressCard({
           <span>Approved Progress</span>
           <strong style={{ color: colors.ink }}>{supplier.approvedPercent.toFixed(0)}%</strong>
         </div>
-        <div style={{ width: '100%', height: '10px', borderRadius: '999px', backgroundColor: '#ebe7e5', overflow: 'hidden' }}>
-          <div
-            style={{
-              width: `${supplier.approvedPercent}%`,
-              height: '100%',
-              borderRadius: '999px',
-              background: `linear-gradient(90deg, ${colors.brand} 0%, ${colors.gold} 100%)`,
-            }}
-          />
-        </div>
+        <Link
+          href={`/dashboard/payments?supplier=${supplier.id}`}
+          style={{ display: 'block', textDecoration: 'none' }}
+          title={`View ${supplier.name} payment history`}
+        >
+          <div style={{ width: '100%', height: '10px', borderRadius: '999px', backgroundColor: '#ebe7e5', overflow: 'hidden', cursor: 'pointer' }}>
+            <div
+              style={{
+                width: `${supplier.approvedPercent}%`,
+                height: '100%',
+                borderRadius: '999px',
+                background: `linear-gradient(90deg, ${colors.brand} 0%, ${colors.gold} 100%)`,
+              }}
+            />
+          </div>
+        </Link>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem 1rem' }}>
