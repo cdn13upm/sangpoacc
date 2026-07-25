@@ -34,14 +34,14 @@ type UserRecord = {
   id: string;
   company_id: string | null;
   company_name: string | null;
-  role: 'admin' | 'manager';
+  role: 'admin' | 'manager' | 'company_director';
   username: string | null;
   email: string | null;
 };
 
 type MappingDraft = {
   company_id: string;
-  role: 'admin' | 'manager';
+  role: 'admin' | 'manager' | 'company_director';
 };
 
 const emptyCompanyForm = {
@@ -50,6 +50,10 @@ const emptyCompanyForm = {
   phone: '',
   email: '',
 };
+
+function formatRoleLabel(role: UserRecord['role']) {
+  return role.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 export default function CompanyAdminPage() {
   const [loading, setLoading] = useState(true);
@@ -233,7 +237,10 @@ export default function CompanyAdminPage() {
     }
   }
 
-  const managerCount = useMemo(() => users.filter((user) => user.role === 'manager').length, [users]);
+  const approverCount = useMemo(
+    () => users.filter((user) => user.role === 'manager' || user.role === 'company_director').length,
+    [users]
+  );
   const selectedCompanyName = companies.find((company) => company.id === selectedCompanyId)?.name || '-';
 
   if (loading) {
@@ -254,7 +261,7 @@ export default function CompanyAdminPage() {
       <div style={{ ...summaryGridStyle, marginBottom: '1.5rem' }}>
         <MetricCard label="Companies" value={String(companies.length)} />
         <MetricCard label="Users" value={String(users.length)} />
-        <MetricCard label="Managers" value={String(managerCount)} />
+        <MetricCard label="Approvers" value={String(approverCount)} />
         <MetricCard label="Current Company" value={selectedCompanyName} />
       </div>
 
@@ -465,7 +472,7 @@ export default function CompanyAdminPage() {
                       <BodyCell>{user.email || '-'}</BodyCell>
                       <BodyCell>{user.username || '-'}</BodyCell>
                       <BodyCell>{user.company_name || '-'}</BodyCell>
-                      <BodyCell style={{ textTransform: 'capitalize' }}>{user.role}</BodyCell>
+                      <BodyCell>{formatRoleLabel(user.role)}</BodyCell>
                       <BodyCell>
                         <select
                           value={draft.company_id}
@@ -496,7 +503,7 @@ export default function CompanyAdminPage() {
                               ...current,
                               [user.id]: {
                                 ...draft,
-                                role: e.target.value as 'admin' | 'manager',
+                                role: e.target.value as 'admin' | 'manager' | 'company_director',
                               },
                             }))
                           }
@@ -504,6 +511,7 @@ export default function CompanyAdminPage() {
                         >
                           <option value="admin">Admin</option>
                           <option value="manager">Manager</option>
+                          <option value="company_director">Company Director</option>
                         </select>
                       </BodyCell>
                       <BodyCell>

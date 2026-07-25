@@ -190,7 +190,7 @@ export default function CertificatesPage() {
   }
 
   const isAdmin = userRole === 'admin';
-  const isManager = userRole === 'manager';
+  const isApprover = userRole === 'manager' || userRole === 'company_director';
   const totalCertified = useMemo(() => certificates.reduce((sum, item) => sum + Number(item.certified_amount || 0), 0), [certificates]);
 
   if (loading) {
@@ -203,7 +203,7 @@ export default function CertificatesPage() {
         <div>
         <h1 style={sectionTitleStyle}>Certificates</h1>
         <p style={sectionSubtitleStyle}>
-          Admin prepares certificates after confirming invoice amounts. Manager can approve once the certificate is submitted.
+          Admin prepares certificates after confirming invoice amounts. Manager or Company Director can approve once the certificate is submitted.
         </p>
         </div>
       </div>
@@ -319,7 +319,7 @@ export default function CertificatesPage() {
                         Submit
                       </button>
                     )}
-                    {isManager && certificate.approval_status === 'pending_approval' && (
+                    {isApprover && certificate.approval_status === 'pending_approval' && (
                       <button onClick={() => approveCertificate(certificate.id)} style={primaryButtonStyle}>
                         Approve
                       </button>

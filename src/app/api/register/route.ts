@@ -33,6 +33,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!['admin', 'manager', 'company_director'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role selected' }, { status: 400 });
+    }
+
     const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from('Sangpo_User')
       .select('id')

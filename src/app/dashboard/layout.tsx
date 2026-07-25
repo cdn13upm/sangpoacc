@@ -8,6 +8,11 @@ type SangpoUser = {
   role: string;
 };
 
+function formatRoleLabel(role?: string | null) {
+  if (!role) return 'User';
+  return role.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient();
 
@@ -79,7 +84,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               Signed in as
             </p>
             <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: '700', margin: 0, textTransform: 'capitalize' }}>
-              {sangpoUser?.role || 'User'}
+              {formatRoleLabel(sangpoUser?.role)}
             </p>
           </div>
         </div>

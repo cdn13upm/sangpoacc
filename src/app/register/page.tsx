@@ -23,7 +23,7 @@ export default function RegisterPage() {
     companyMode: 'existing' as 'existing' | 'new',
     existingCompanyId: '',
     companyName: '',
-    role: 'admin' as const,
+    role: 'admin' as 'admin' | 'manager' | 'company_director',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -208,7 +208,7 @@ export default function RegisterPage() {
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
                 required
-                placeholder="example: sangpomanager"
+                placeholder="example: sangpodirector"
                 style={inputStyle}
               />
             </Field>
@@ -237,11 +237,12 @@ export default function RegisterPage() {
             <Field label="Role">
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'manager' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'manager' | 'company_director' })}
                 style={inputStyle}
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
+                <option value="company_director">Company Director</option>
               </select>
             </Field>
 

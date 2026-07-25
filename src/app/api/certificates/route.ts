@@ -148,7 +148,9 @@ export async function PATCH(request: Request) {
       updates.approval_remark = approval_remark.trim() || null;
     }
 
-    if (authorization.role !== 'admin' && !(authorization.role === 'manager' && approval_status === 'approved')) {
+    const canApprove = ['manager', 'company_director'].includes(authorization.role) && approval_status === 'approved';
+
+    if (authorization.role !== 'admin' && !canApprove) {
       return NextResponse.json({ error: 'You are not allowed to update this certificate' }, { status: 403 });
     }
 

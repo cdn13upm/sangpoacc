@@ -170,7 +170,7 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'User, role, and company are required' }, { status: 400 });
       }
 
-      if (!['admin', 'manager'].includes(role)) {
+      if (!['admin', 'manager', 'company_director'].includes(role)) {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
       }
 
