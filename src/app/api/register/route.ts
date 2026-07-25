@@ -17,12 +17,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     console.log('Request body:', body);
-    const { email, password, companyName, role, username } = body;
+    const { email, password, companyName, role, username, existingCompanyId, companyMode } = body;
     const normalizedEmail = email?.trim().toLowerCase();
     const normalizedUsername = normalizeUsername(username || '');
 
     // Validate input
-    if (!normalizedEmail || !password || !companyName || !role || !normalizedUsername) {
+    if (!normalizedEmail || !password || !role || !normalizedUsername) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -47,19 +47,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
-    // 1. Create company
-    console.log('Step 1: Creating company...');
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('Sangpo_Company')
-      .insert({ name: companyName })
-      .select('id')
-      .single();
+    let companyId = '';
 
-    if (companyError) {
-      console.error('Company creation error:', companyError);
-      throw new Error('Failed to create company: ' + companyError.message);
+    if (companyMode === 'existing') {
+      if (!existingCompanyId) {
+        return NextResponse.json({ error: 'Please select an existing company' }, { status: 400 });
+      }
+
+      const { data: company, error: companyError } = await supabaseAdmin
+        .from('Sangpo_Company')
+        .select('id')
+        .eq('id', existingCompanyId)
+        .single();
+
+      if (companyError || !company) {
+        throw new Error(companyError?.message || 'Selected company not found');
+      }
+
+      companyId = company.id;
+    } else {
+      if (!companyName?.trim()) {
+        return NextResponse.json({ error: 'Company name is required' }, { status: 400 });
+      }
+
+      console.log('Step 1: Creating company...');
+      const { data: company, error: companyError } = await supabaseAdmin
+        .from('Sangpo_Company')
+        .insert({ name: companyName.trim() })
+        .select('id')
+        .single();
+
+      if (companyError) {
+        console.error('Company creation error:', companyError);
+        throw new Error('Failed to create company: ' + companyError.message);
+      }
+      console.log('Company created:', company);
+      companyId = company.id;
     }
-    console.log('Company created:', company);
 
     // 2. Create user in Supabase Auth
     console.log('Step 2: Creating auth user...');
@@ -88,7 +112,7 @@ export async function POST(request: Request) {
       .from('Sangpo_User')
       .insert({
         id: authUser.user.id,
-        company_id: company.id,
+        company_id: companyId,
         role,
         email: normalizedEmail,
         username: normalizedUsername,
