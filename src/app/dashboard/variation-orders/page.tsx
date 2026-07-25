@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   bodyCellStyle,
@@ -15,6 +15,7 @@ import {
   panelStyle,
   panelTitleStyle,
   primaryButtonStyle,
+  secondaryButtonStyle,
   sectionSubtitleStyle,
   sectionTitleStyle,
   summaryCardStyle,
@@ -84,6 +85,8 @@ export default function VariationOrdersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState(emptyVoForm);
+  const [editingVoId, setEditingVoId] = useState<string | null>(null);
+  const formPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -127,6 +130,33 @@ export default function VariationOrdersPage() {
     setVariationOrders(result.variationOrders || []);
   }
 
+  function resetForm() {
+    setFormData(emptyVoForm);
+    setEditingVoId(null);
+  }
+
+  function scrollToForm() {
+    if (!formPanelRef.current || typeof window === 'undefined') return;
+
+    window.requestAnimationFrame(() => {
+      formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function startEdit(item: VariationOrder) {
+    setEditingVoId(item.id);
+    setFormData({
+      supplier_id: item.supplier_id || '',
+      vo_number: item.vo_number || '',
+      description: item.description || '',
+      amount: String(item.amount || 0),
+      payment_date: item.payment_date || '',
+      payment_reference: item.payment_reference || '',
+      status: item.status || 'draft',
+    });
+    scrollToForm();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -134,19 +164,40 @@ export default function VariationOrdersPage() {
 
     try {
       const response = await fetch('/api/variation-orders', {
-        method: 'POST',
+        method: editingVoId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(editingVoId ? { id: editingVoId, ...formData } : formData),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Failed to save variation order');
 
-      setFormData(emptyVoForm);
+      resetForm();
       await reloadVariationOrders();
     } catch (saveError: any) {
       setError(saveError.message || 'Failed to save variation order');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this variation order?')) return;
+
+    try {
+      const response = await fetch('/api/variation-orders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete variation order');
+
+      if (editingVoId === id) {
+        resetForm();
+      }
+      await reloadVariationOrders();
+    } catch (deleteError: any) {
+      setError(deleteError.message || 'Failed to delete variation order');
     }
   }
 
@@ -184,8 +235,16 @@ export default function VariationOrdersPage() {
       {error && <p style={{ color: '#dc2626', marginTop: 0 }}>{error}</p>}
 
       {isAdmin && (
-        <div style={{ ...panelStyle, marginBottom: '1.5rem', maxWidth: '960px' }}>
-          <h2 style={panelTitleStyle}>Add Variation Order</h2>
+        <div
+          ref={formPanelRef}
+          style={{
+            ...panelStyle,
+            marginBottom: '1.5rem',
+            maxWidth: '960px',
+            ...(editingVoId ? { boxShadow: '0 0 0 2px rgba(127, 29, 29, 0.16)' } : {}),
+          }}
+        >
+          <h2 style={panelTitleStyle}>{editingVoId ? 'Edit Variation Order' : 'Add Variation Order'}</h2>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={formGridStyle}>
               <Field label="Supplier">
@@ -256,10 +315,15 @@ export default function VariationOrdersPage() {
               />
             </Field>
 
-            <div>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Saving...' : 'Save VO'}
+                {saving ? 'Saving...' : editingVoId ? 'Update VO' : 'Save VO'}
               </button>
+              {editingVoId && (
+                <button type="button" onClick={resetForm} style={secondaryButtonStyle}>
+                  Cancel Edit
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -277,7 +341,7 @@ export default function VariationOrdersPage() {
       <div style={panelStyle}>
         <h2 style={panelTitleStyle}>VO Register</h2>
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '980px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1120px' : '980px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>VO Number</HeaderCell>
@@ -288,12 +352,13 @@ export default function VariationOrdersPage() {
                 <HeaderCell>Status</HeaderCell>
                 <HeaderCell>Created</HeaderCell>
                 <HeaderCell>Description</HeaderCell>
+                {isAdmin && <HeaderCell>Actions</HeaderCell>}
               </tr>
             </thead>
             <tbody>
               {variationOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
+                  <td colSpan={isAdmin ? 9 : 8} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
                     No variation orders yet.
                   </td>
                 </tr>
@@ -323,6 +388,27 @@ export default function VariationOrdersPage() {
                     </BodyCell>
                     <BodyCell>{formatDate(item.created_at)}</BodyCell>
                     <BodyCell>{item.description || '-'}</BodyCell>
+                    {isAdmin && (
+                      <BodyCell>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button type="button" onClick={() => startEdit(item)} style={secondaryButtonStyle}>
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            style={{
+                              ...secondaryButtonStyle,
+                              backgroundColor: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              color: '#b91c1c',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </BodyCell>
+                    )}
                   </tr>
                 ))
               )}
