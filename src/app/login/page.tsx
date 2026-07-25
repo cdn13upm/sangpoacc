@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +19,21 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const resolveResponse = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier }),
+      });
+      const resolveResult = await resolveResponse.json();
+
+      if (!resolveResponse.ok) {
+        throw new Error(resolveResult.error || 'Login failed');
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: resolveResult.email,
+        password,
+      });
 
       if (authError) throw authError;
 
@@ -113,13 +127,14 @@ export default function LoginPage() {
               color: '#374151',
               marginBottom: '0.5rem'
             }}>
-              Email
+              Email or Username
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
+              placeholder="Enter email or username"
               style={{
                 display: 'block',
                 width: '100%',
@@ -128,7 +143,8 @@ export default function LoginPage() {
                 padding: '0.875rem 1rem',
                 fontSize: '1rem',
                 transition: 'border-color 0.2s ease',
-                outline: 'none'
+                outline: 'none',
+                boxSizing: 'border-box'
               }}
               onFocus={(e) => e.target.style.borderColor = '#780000'}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -158,7 +174,8 @@ export default function LoginPage() {
                 padding: '0.875rem 1rem',
                 fontSize: '1rem',
                 transition: 'border-color 0.2s ease',
-                outline: 'none'
+                outline: 'none',
+                boxSizing: 'border-box'
               }}
               onFocus={(e) => e.target.style.borderColor = '#780000'}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}

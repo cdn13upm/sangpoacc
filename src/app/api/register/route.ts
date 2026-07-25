@@ -8,16 +8,43 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export async function POST(request: Request) {
   console.log('=== Register API called ===');
   try {
     const body = await request.json();
     console.log('Request body:', body);
-    const { email, password, companyName, role } = body;
+    const { email, password, companyName, role, username } = body;
+    const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedUsername = normalizeUsername(username || '');
 
     // Validate input
-    if (!email || !password || !companyName || !role) {
+    if (!normalizedEmail || !password || !companyName || !role || !normalizedUsername) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (!/^[a-z0-9._-]{3,30}$/.test(normalizedUsername)) {
+      return NextResponse.json(
+        { error: 'Username must be 3-30 characters and use only letters, numbers, dot, underscore, or hyphen' },
+        { status: 400 }
+      );
+    }
+
+    const { data: existingUser, error: existingUserError } = await supabaseAdmin
+      .from('Sangpo_User')
+      .select('id')
+      .eq('username', normalizedUsername)
+      .maybeSingle();
+
+    if (existingUserError) {
+      throw new Error(existingUserError.message);
+    }
+
+    if (existingUser) {
+      return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
     // 1. Create company
@@ -37,9 +64,12 @@ export async function POST(request: Request) {
     // 2. Create user in Supabase Auth
     console.log('Step 2: Creating auth user...');
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: normalizedEmail,
       password,
-      email_confirm: true // Auto-confirm email
+      email_confirm: true,
+      user_metadata: {
+        username: normalizedUsername,
+      },
     });
 
     if (authError) {
@@ -59,7 +89,9 @@ export async function POST(request: Request) {
       .insert({
         id: authUser.user.id,
         company_id: company.id,
-        role
+        role,
+        email: normalizedEmail,
+        username: normalizedUsername,
       });
 
     if (userError) {

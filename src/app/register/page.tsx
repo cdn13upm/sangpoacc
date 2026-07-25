@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState<'code' | 'form'>('code');
   const [code, setCode] = useState('');
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     companyName: '',
@@ -180,11 +181,46 @@ export default function RegisterPage() {
                   borderRadius: '0.5rem',
                   fontSize: '1rem',
                   outline: 'none',
-                  transition: 'border-color 0.2s ease'
+                  transition: 'border-color 0.2s ease',
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#780000'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               />
+            </div>
+
+            <div style={{ textAlign: 'left' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Username
+              </label>
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
+                required
+                placeholder="example: sangpoadmin"
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#780000'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
+              <p style={{ color: '#6b7280', fontSize: '0.82rem', margin: '0.45rem 0 0' }}>
+                Use letters, numbers, dot, underscore, or hyphen.
+              </p>
             </div>
 
             <div style={{ textAlign: 'left' }}>
@@ -209,7 +245,8 @@ export default function RegisterPage() {
                   borderRadius: '0.5rem',
                   fontSize: '1rem',
                   outline: 'none',
-                  transition: 'border-color 0.2s ease'
+                  transition: 'border-color 0.2s ease',
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#780000'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -239,7 +276,8 @@ export default function RegisterPage() {
                   borderRadius: '0.5rem',
                   fontSize: '1rem',
                   outline: 'none',
-                  transition: 'border-color 0.2s ease'
+                  transition: 'border-color 0.2s ease',
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#780000'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -267,7 +305,8 @@ export default function RegisterPage() {
                   fontSize: '1rem',
                   outline: 'none',
                   transition: 'border-color 0.2s ease',
-                  backgroundColor: 'white'
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#780000'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
