@@ -184,6 +184,20 @@ export default function LoginPage() {
 
           {error && <p style={{ color: '#dc2626', fontSize: '0.9rem', marginTop: '0.5rem' }}>{error}</p>}
 
+          <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
+            <Link
+              href="/reset-password"
+              style={{
+                color: '#780000',
+                textDecoration: 'none',
+                fontSize: '0.92rem',
+                fontWeight: '700',
+              }}
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
