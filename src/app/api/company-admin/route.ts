@@ -117,6 +117,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    if (!authorization.currentCompanyId) {
+      const { error: assignError } = await supabaseAdmin
+        .from('Sangpo_User')
+        .update({
+          company_id: data.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', authorization.userId);
+
+      if (assignError) {
+        return NextResponse.json({ error: assignError.message }, { status: 400 });
+      }
+    }
+
     return NextResponse.json({ company: data }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to create company' }, { status: 500 });
@@ -163,10 +177,10 @@ export async function PATCH(request: Request) {
 
     if (action === 'mapping') {
       const userId = body?.userId;
-      const companyId = body?.company_id || null;
+      const companyId = body?.company_id;
       const role = body?.role;
 
-      if (!userId || !role) {
+      if (!userId || !role || !companyId) {
         return NextResponse.json({ error: 'User, role, and company are required' }, { status: 400 });
       }
 

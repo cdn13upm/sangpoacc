@@ -106,7 +106,7 @@ export default function CompanyAdminPage() {
           userRows.map((user: UserRecord) => [
             user.id,
             {
-              company_id: user.company_id || '',
+              company_id: user.company_id || result.currentCompanyId || companyRows[0]?.id || '',
               role: user.role,
             },
           ])
@@ -190,7 +190,7 @@ export default function CompanyAdminPage() {
         body: JSON.stringify({
           action: 'mapping',
           userId,
-          company_id: draft.company_id || null,
+          company_id: draft.company_id,
           role: draft.role,
         }),
       });
@@ -487,7 +487,6 @@ export default function CompanyAdminPage() {
                           }
                           style={inputStyle}
                         >
-                          <option value="">No company</option>
                           {companies.map((company) => (
                             <option key={company.id} value={company.id}>
                               {company.name}
