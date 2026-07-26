@@ -132,7 +132,7 @@ export default async function Dashboard() {
   const committedValue = totalAwarded + totalVo;
   const committedAwardedContract = totalAwarded;
   const contractRemaining = committedAwardedContract - totalApproved;
-  const cashFlowBalance = projectBudget - totalApproved - approvedVoPaymentAmount;
+  const cashFlowBalance = projectBudget - totalApproved - approvedVoPaymentAmount - contractRemaining;
   const remainingBudget = projectBudget - committedValue;
   const usagePercentRaw = projectBudget > 0 ? (committedValue / projectBudget) * 100 : 0;
   const usagePercent = clampPercent(usagePercentRaw);
