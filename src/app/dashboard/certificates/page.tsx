@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   bodyCellStyle,
@@ -84,6 +84,9 @@ export default function CertificatesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState(emptyForm);
+  const [editingCertificateId, setEditingCertificateId] = useState<string | null>(null);
+  const [deletingCertificateId, setDeletingCertificateId] = useState<string | null>(null);
+  const formPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -131,27 +134,77 @@ export default function CertificatesPage() {
     setCertificates(result.certificates || []);
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError('');
 
     try {
       const response = await fetch('/api/certificates', {
-        method: 'POST',
+        method: editingCertificateId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(editingCertificateId ? { id: editingCertificateId, ...formData } : formData),
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Failed to create certificate');
+      if (!response.ok) throw new Error(result.error || (editingCertificateId ? 'Failed to update certificate' : 'Failed to create certificate'));
 
+      setEditingCertificateId(null);
       setFormData(emptyForm);
       await reloadCertificates();
     } catch (saveError: any) {
-      setError(saveError.message || 'Failed to create certificate');
+      setError(saveError.message || (editingCertificateId ? 'Failed to update certificate' : 'Failed to create certificate'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  function startEdit(certificate: Certificate) {
+    setEditingCertificateId(certificate.id);
+    setFormData({
+      supplier_id: certificate.supplier_id || '',
+      milestone_id: certificate.milestone_id || '',
+      certificate_number: certificate.certificate_number || '',
+      certificate_date: certificate.certificate_date || '',
+      invoice_number: certificate.invoice_number || '',
+      invoice_amount: String(certificate.invoice_amount || 0),
+      certified_amount: String(certificate.certified_amount || 0),
+      approval_status: certificate.approval_status || 'draft',
+      approval_remark: certificate.approval_remark || '',
+    });
+    setError('');
+    formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelEdit() {
+    setEditingCertificateId(null);
+    setFormData(emptyForm);
+    setError('');
+  }
+
+  async function deleteCertificate(certificate: Certificate) {
+    const confirmed = window.confirm(`Delete certificate "${certificate.certificate_number}"?`);
+    if (!confirmed) return;
+
+    setDeletingCertificateId(certificate.id);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/certificates?id=${certificate.id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete certificate');
+
+      if (editingCertificateId === certificate.id) {
+        cancelEdit();
+      }
+      await reloadCertificates();
+    } catch (deleteError: any) {
+      setError(deleteError.message || 'Failed to delete certificate');
+    } finally {
+      setDeletingCertificateId(null);
     }
   }
 
@@ -216,8 +269,8 @@ export default function CertificatesPage() {
       {error && <p style={{ color: '#dc2626', marginTop: 0 }}>{error}</p>}
 
       {isAdmin && (
-        <Panel title="Create Certificate">
-          <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+        <Panel title={editingCertificateId ? 'Edit Certificate' : 'Create Certificate'} panelRef={formPanelRef}>
+          <form onSubmit={handleSave} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
             <Field label="Supplier">
               <select value={formData.supplier_id} onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value, milestone_id: '' })} style={inputStyle}>
                 <option value="">Select supplier</option>
@@ -259,6 +312,7 @@ export default function CertificatesPage() {
               <select value={formData.approval_status} onChange={(e) => setFormData({ ...formData, approval_status: e.target.value })} style={inputStyle}>
                 <option value="draft">Draft</option>
                 <option value="pending_approval">Pending Approval</option>
+                <option value="approved">Approved</option>
               </select>
             </Field>
             <div style={{ gridColumn: '1 / -1' }}>
@@ -267,9 +321,16 @@ export default function CertificatesPage() {
               </Field>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <button type="submit" disabled={saving} style={primaryButtonStyle}>
-                {saving ? 'Saving...' : 'Create Certificate'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button type="submit" disabled={saving} style={primaryButtonStyle}>
+                  {saving ? 'Saving...' : editingCertificateId ? 'Update Certificate' : 'Create Certificate'}
+                </button>
+                {editingCertificateId && (
+                  <button type="button" onClick={cancelEdit} style={secondaryButtonStyle}>
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           </form>
         </Panel>
@@ -314,16 +375,37 @@ export default function CertificatesPage() {
                   <BodyCell>{formatCurrency(certificate.certified_amount)}</BodyCell>
                   <BodyCell>{certificate.approval_status}</BodyCell>
                   <BodyCell>
-                    {isAdmin && certificate.approval_status === 'draft' && (
-                      <button onClick={() => submitToManager(certificate.id)} style={secondaryButtonStyle}>
-                        Submit
-                      </button>
-                    )}
-                    {isApprover && certificate.approval_status === 'pending_approval' && (
-                      <button onClick={() => approveCertificate(certificate.id)} style={primaryButtonStyle}>
-                        Approve
-                      </button>
-                    )}
+                    <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+                      {isAdmin && (
+                        <>
+                          <button type="button" onClick={() => startEdit(certificate)} style={secondaryButtonStyle}>
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteCertificate(certificate)}
+                            disabled={deletingCertificateId === certificate.id}
+                            style={{
+                              ...secondaryButtonStyle,
+                              color: '#b91c1c',
+                              opacity: deletingCertificateId === certificate.id ? 0.65 : 1,
+                            }}
+                          >
+                            {deletingCertificateId === certificate.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </>
+                      )}
+                      {isAdmin && certificate.approval_status === 'draft' && (
+                        <button type="button" onClick={() => submitToManager(certificate.id)} style={secondaryButtonStyle}>
+                          Submit
+                        </button>
+                      )}
+                      {isApprover && certificate.approval_status === 'pending_approval' && (
+                        <button type="button" onClick={() => approveCertificate(certificate.id)} style={primaryButtonStyle}>
+                          Approve
+                        </button>
+                      )}
+                    </div>
                   </BodyCell>
                 </tr>
               ))
@@ -336,9 +418,9 @@ export default function CertificatesPage() {
   );
 }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) {
+function Panel({ title, children, panelRef }: { title: string; children: ReactNode; panelRef?: { current: HTMLDivElement | null } }) {
   return (
-    <div style={panelStyle}>
+    <div ref={panelRef} style={panelStyle}>
       <h2 style={panelTitleStyle}>{title}</h2>
       {children}
     </div>
