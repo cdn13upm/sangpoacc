@@ -4,6 +4,7 @@ import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import type { SangpoRole } from '@/lib/roles';
 
 const SECRET_CODE = 'S@ngpo9088';
 
@@ -23,7 +24,7 @@ export default function RegisterPage() {
     companyMode: 'existing' as 'existing' | 'new',
     existingCompanyId: '',
     companyName: '',
-    role: 'admin' as 'admin' | 'manager' | 'company_director',
+    role: 'admin' as SangpoRole,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -237,12 +238,13 @@ export default function RegisterPage() {
             <Field label="Role">
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'manager' | 'company_director' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as SangpoRole })}
                 style={inputStyle}
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
                 <option value="company_director">Company Director</option>
+                <option value="viewer">Viewer</option>
               </select>
             </Field>
 

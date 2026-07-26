@@ -16,7 +16,6 @@ import {
 type SangpoUser = {
   role: string;
   company_id: string | null;
-  Sangpo_Company?: { name: string }[];
 };
 
 type ProjectRecord = {
@@ -70,13 +69,16 @@ export default async function Dashboard() {
 
   const { data: sangpoUser } = await supabase
     .from('Sangpo_User')
-    .select('role, company_id, Sangpo_Company(name)')
+    .select('role, company_id')
     .eq('id', user.id)
     .single() as { data: SangpoUser | null };
 
   const companyId = sangpoUser?.company_id;
 
-  const [{ data: project }, { data: suppliers }, { data: milestones }, { data: variationOrders }] = await Promise.all([
+  const [{ data: company }, { data: project }, { data: suppliers }, { data: milestones }, { data: variationOrders }] = await Promise.all([
+    companyId
+      ? supabase.from('Sangpo_Company').select('name').eq('id', companyId).maybeSingle()
+      : Promise.resolve({ data: null }),
     companyId
       ? supabase.from('Sangpo_Project').select('name, overall_budget').eq('company_id', companyId).limit(1).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -99,6 +101,7 @@ export default async function Dashboard() {
   const supplierRows = (suppliers || []) as SupplierRecord[];
   const milestoneRows = (milestones || []) as MilestoneRecord[];
   const voRows = (variationOrders || []) as VariationOrderRecord[];
+  const companyName = company?.name || null;
 
   const supplierCards = supplierRows.map((supplier) => {
     const awarded = Number(supplier.contract_award_value || 0);
@@ -149,7 +152,7 @@ export default async function Dashboard() {
         <div>
           <h1 style={sectionTitleStyle}>{t('dashboard.title')}</h1>
           <p style={sectionSubtitleStyle}>
-            {sangpoUser?.Sangpo_Company?.[0]?.name || t('dashboard.noCompanyAssigned')} •{' '}
+            {companyName || t('dashboard.noCompanyAssigned')} •{' '}
             <span style={{ textTransform: 'capitalize', fontWeight: 700 }}>{sangpoUser?.role || 'user'}</span>
           </p>
         </div>

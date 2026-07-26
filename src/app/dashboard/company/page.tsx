@@ -2,6 +2,7 @@
 
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import type { SangpoRole } from '@/lib/roles';
 import {
   bodyCellStyle,
   colors,
@@ -34,14 +35,14 @@ type UserRecord = {
   id: string;
   company_id: string | null;
   company_name: string | null;
-  role: 'admin' | 'manager' | 'company_director';
+  role: SangpoRole;
   username: string | null;
   email: string | null;
 };
 
 type MappingDraft = {
   company_id: string;
-  role: 'admin' | 'manager' | 'company_director';
+  role: SangpoRole;
 };
 
 const emptyCompanyForm = {
@@ -502,7 +503,7 @@ export default function CompanyAdminPage() {
                               ...current,
                               [user.id]: {
                                 ...draft,
-                                role: e.target.value as 'admin' | 'manager' | 'company_director',
+                                role: e.target.value as SangpoRole,
                               },
                             }))
                           }
@@ -511,6 +512,7 @@ export default function CompanyAdminPage() {
                           <option value="admin">Admin</option>
                           <option value="manager">Manager</option>
                           <option value="company_director">Company Director</option>
+                          <option value="viewer">Viewer</option>
                         </select>
                       </BodyCell>
                       <BodyCell>

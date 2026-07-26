@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { isSangpoRole } from '@/lib/roles';
 
 // Create a Supabase client with service_role key to bypass RLS for admin operations
 const supabaseAdmin = createClient(
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!['admin', 'manager', 'company_director'].includes(role)) {
+    if (!isSangpoRole(role)) {
       return NextResponse.json({ error: 'Invalid role selected' }, { status: 400 });
     }
 

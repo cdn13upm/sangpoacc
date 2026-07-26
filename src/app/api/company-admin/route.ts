@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { isSangpoRole } from '@/lib/roles';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -184,7 +185,7 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'User, role, and company are required' }, { status: 400 });
       }
 
-      if (!['admin', 'manager', 'company_director'].includes(role)) {
+      if (!isSangpoRole(role)) {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
       }
 

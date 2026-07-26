@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { canAccessDashboardPath } from "@/lib/roles";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -49,6 +50,20 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  if (user && request.nextUrl.pathname.startsWith("/dashboard")) {
+    const { data: sangpoUser } = await supabase
+      .from("Sangpo_User")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!canAccessDashboardPath(sangpoUser?.role, request.nextUrl.pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're

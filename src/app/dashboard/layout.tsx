@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getServerLanguage } from '@/lib/i18n/server';
 import { translate } from '@/lib/i18n/translations';
+import { isViewerRole } from '@/lib/roles';
 import LanguageToggle from '../language-toggle';
 import DashboardNavLink from './nav-link';
 import { colors, contentWrapStyle } from './ui';
@@ -34,18 +35,24 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     .single() as { data: SangpoUser | null };
 
   const isAdmin = sangpoUser?.role === 'admin';
+  const isViewer = isViewerRole(sangpoUser?.role);
 
-  const navItems = [
-    { href: '/dashboard', label: t('sidebar.dashboard') },
-    ...(isAdmin ? [{ href: '/dashboard/company', label: t('sidebar.companyAdmin') }] : []),
-    { href: '/dashboard/project', label: t('sidebar.projectBudget') },
-    { href: '/dashboard/suppliers', label: t('sidebar.suppliers') },
-    { href: '/dashboard/milestones', label: t('sidebar.milestones') },
-    { href: '/dashboard/variation-orders', label: t('sidebar.variationOrders') },
-    { href: '/dashboard/documents', label: t('sidebar.documents') },
-    { href: '/dashboard/payments', label: t('sidebar.payments') },
-    { href: '/dashboard/certificates', label: t('sidebar.certificates') },
-  ];
+  const navItems = isViewer
+    ? [
+        { href: '/dashboard', label: t('sidebar.dashboard') },
+        { href: '/dashboard/payments', label: t('sidebar.payments') },
+      ]
+    : [
+        { href: '/dashboard', label: t('sidebar.dashboard') },
+        ...(isAdmin ? [{ href: '/dashboard/company', label: t('sidebar.companyAdmin') }] : []),
+        { href: '/dashboard/project', label: t('sidebar.projectBudget') },
+        { href: '/dashboard/suppliers', label: t('sidebar.suppliers') },
+        { href: '/dashboard/milestones', label: t('sidebar.milestones') },
+        { href: '/dashboard/variation-orders', label: t('sidebar.variationOrders') },
+        { href: '/dashboard/documents', label: t('sidebar.documents') },
+        { href: '/dashboard/payments', label: t('sidebar.payments') },
+        { href: '/dashboard/certificates', label: t('sidebar.certificates') },
+      ];
 
   const roleLabel = sangpoUser?.role ? formatRoleLabel(sangpoUser.role) : t('role.user');
 
