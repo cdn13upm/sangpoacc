@@ -391,16 +391,15 @@ export default function LegacyMilestonesPage() {
         </div>
 
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1040px' : '900px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1100px' : '940px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
                 <HeaderCell>Supplier</HeaderCell>
                 <HeaderCell>Milestone</HeaderCell>
-                <HeaderCell>Milestone Amount</HeaderCell>
                 <HeaderCell>Approved Invoice</HeaderCell>
                 <HeaderCell>Payment Date</HeaderCell>
                 <HeaderCell>Reference</HeaderCell>
-                <HeaderCell>Balance</HeaderCell>
+                <HeaderCell>Remark / Description</HeaderCell>
                 {isAdmin && <HeaderCell>Actions</HeaderCell>}
               </tr>
             </thead>
@@ -408,7 +407,7 @@ export default function LegacyMilestonesPage() {
               {filteredMilestones.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 8 : 7}
+                    colSpan={isAdmin ? 7 : 6}
                     style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}
                   >
                     {milestones.length === 0 ? 'No milestones yet.' : 'No milestone records match that supplier name.'}
@@ -416,18 +415,14 @@ export default function LegacyMilestonesPage() {
                 </tr>
               ) : (
                 filteredMilestones.map((milestone) => {
-                  const balance =
-                    Number(milestone.milestone_amount || 0) - Number(milestone.approved_invoice_total || 0);
-
                   return (
                     <tr key={milestone.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                       <BodyCell>{getSupplierName(milestone.Sangpo_Supplier)}</BodyCell>
                       <BodyCell>{milestone.title}</BodyCell>
-                      <BodyCell>{formatCurrency(milestone.milestone_amount)}</BodyCell>
                       <BodyCell>{formatCurrency(milestone.approved_invoice_total)}</BodyCell>
                       <BodyCell>{formatDate(milestone.payment_date)}</BodyCell>
                       <BodyCell>{milestone.payment_reference || '-'}</BodyCell>
-                      <BodyCell>{formatCurrency(balance)}</BodyCell>
+                      <BodyCell>{milestone.description || '-'}</BodyCell>
                       {isAdmin && (
                         <BodyCell>
                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>

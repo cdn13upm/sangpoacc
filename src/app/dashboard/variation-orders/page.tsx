@@ -84,6 +84,7 @@ export default function VariationOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState(emptyVoForm);
   const [editingVoId, setEditingVoId] = useState<string | null>(null);
   const formPanelRef = useRef<HTMLDivElement | null>(null);
@@ -210,6 +211,14 @@ export default function VariationOrdersPage() {
     () => variationOrders.filter((item) => item.status === 'draft').length,
     [variationOrders]
   );
+  const filteredVariationOrders = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    if (!normalizedSearch) return variationOrders;
+
+    return variationOrders.filter((item) =>
+      getSupplierName(item.Sangpo_Supplier).toLowerCase().includes(normalizedSearch)
+    );
+  }, [variationOrders, searchTerm]);
 
   if (loading) {
     return <p style={{ color: colors.muted }}>Loading variation orders...</p>;
@@ -340,53 +349,44 @@ export default function VariationOrdersPage() {
 
       <div style={panelStyle}>
         <h2 style={panelTitleStyle}>VO Register</h2>
+        <div style={{ marginBottom: '1rem', maxWidth: '420px' }}>
+          <Field label="Search Supplier">
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Type supplier name"
+              style={inputStyle}
+            />
+          </Field>
+        </div>
         <div style={tableWrapStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1120px' : '980px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1100px' : '920px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
-                <HeaderCell>VO Number</HeaderCell>
                 <HeaderCell>Supplier</HeaderCell>
-                <HeaderCell>Amount</HeaderCell>
+                <HeaderCell>VO Number</HeaderCell>
+                <HeaderCell>VO Amount</HeaderCell>
                 <HeaderCell>Payment Date</HeaderCell>
                 <HeaderCell>Reference</HeaderCell>
-                <HeaderCell>Status</HeaderCell>
-                <HeaderCell>Created</HeaderCell>
-                <HeaderCell>Description</HeaderCell>
+                <HeaderCell>Remark / Description</HeaderCell>
                 {isAdmin && <HeaderCell>Actions</HeaderCell>}
               </tr>
             </thead>
             <tbody>
-              {variationOrders.length === 0 ? (
+              {filteredVariationOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 9 : 8} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
-                    No variation orders yet.
+                  <td colSpan={isAdmin ? 7 : 6} style={{ padding: '2rem 1rem', textAlign: 'center', color: colors.muted }}>
+                    {variationOrders.length === 0 ? 'No variation orders yet.' : 'No VO records match that supplier name.'}
                   </td>
                 </tr>
               ) : (
-                variationOrders.map((item) => (
+                filteredVariationOrders.map((item) => (
                   <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <BodyCell>{item.vo_number}</BodyCell>
                     <BodyCell>{getSupplierName(item.Sangpo_Supplier)}</BodyCell>
+                    <BodyCell>{item.vo_number}</BodyCell>
                     <BodyCell>{formatCurrency(item.amount)}</BodyCell>
                     <BodyCell>{formatDate(item.payment_date)}</BodyCell>
                     <BodyCell>{item.payment_reference || '-'}</BodyCell>
-                    <BodyCell>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          padding: '0.28rem 0.62rem',
-                          borderRadius: '999px',
-                          backgroundColor: item.status === 'approved' ? '#ecfdf5' : '#fff7ed',
-                          color: item.status === 'approved' ? '#15803d' : '#b45309',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          textTransform: 'capitalize',
-                        }}
-                      >
-                        {item.status}
-                      </span>
-                    </BodyCell>
-                    <BodyCell>{formatDate(item.created_at)}</BodyCell>
                     <BodyCell>{item.description || '-'}</BodyCell>
                     {isAdmin && (
                       <BodyCell>
