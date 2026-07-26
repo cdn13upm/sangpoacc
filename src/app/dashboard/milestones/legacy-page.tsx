@@ -97,6 +97,7 @@ export default function LegacyMilestonesPage() {
   const [loading, setLoading] = useState(true);
   const [savingMilestone, setSavingMilestone] = useState(false);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [milestoneForm, setMilestoneForm] = useState<MilestoneFormState>(emptyMilestoneForm);
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const milestonePanelRef = useRef<HTMLDivElement | null>(null);
@@ -246,6 +247,14 @@ export default function LegacyMilestonesPage() {
       ),
     [milestones]
   );
+  const filteredMilestones = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    if (!normalizedSearch) return milestones;
+
+    return milestones.filter((milestone) =>
+      getSupplierName(milestone.Sangpo_Supplier).toLowerCase().includes(normalizedSearch)
+    );
+  }, [milestones, searchTerm]);
 
   if (loading) {
     return <p style={{ color: '#6b7280' }}>Loading milestones...</p>;
@@ -370,6 +379,17 @@ export default function LegacyMilestonesPage() {
       )}
 
       <Panel title="Milestone Summary">
+        <div style={{ marginBottom: '1rem', maxWidth: '420px' }}>
+          <Field label="Search Supplier">
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Type supplier name"
+              style={inputStyle}
+            />
+          </Field>
+        </div>
+
         <div style={tableWrapStyle}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isAdmin ? '1040px' : '900px' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
@@ -385,17 +405,17 @@ export default function LegacyMilestonesPage() {
               </tr>
             </thead>
             <tbody>
-              {milestones.length === 0 ? (
+              {filteredMilestones.length === 0 ? (
                 <tr>
                   <td
                     colSpan={isAdmin ? 8 : 7}
                     style={{ padding: '2rem 1rem', textAlign: 'center', color: '#6b7280' }}
                   >
-                    No milestones yet.
+                    {milestones.length === 0 ? 'No milestones yet.' : 'No milestone records match that supplier name.'}
                   </td>
                 </tr>
               ) : (
-                milestones.map((milestone) => {
+                filteredMilestones.map((milestone) => {
                   const balance =
                     Number(milestone.milestone_amount || 0) - Number(milestone.approved_invoice_total || 0);
 
