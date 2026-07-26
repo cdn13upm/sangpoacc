@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getServerLanguage } from '@/lib/i18n/server';
+import { translate } from '@/lib/i18n/translations';
 import {
   colors,
   pageHeaderStyle,
@@ -55,6 +57,8 @@ function clampPercent(value: number) {
 
 export default async function Dashboard() {
   const supabase = createClient();
+  const language = getServerLanguage();
+  const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
 
   const {
     data: { user },
@@ -118,7 +122,7 @@ export default async function Dashboard() {
       voTotal,
       approvedPercent,
       voPercent,
-      scope: supplier.scope_of_work || 'Scope not added yet',
+      scope: supplier.scope_of_work || t('dashboard.scopeNotAdded'),
     };
   }).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -143,9 +147,9 @@ export default async function Dashboard() {
     <div>
       <div style={pageHeaderStyle}>
         <div>
-          <h1 style={sectionTitleStyle}>Dashboard</h1>
+          <h1 style={sectionTitleStyle}>{t('dashboard.title')}</h1>
           <p style={sectionSubtitleStyle}>
-            {sangpoUser?.Sangpo_Company?.[0]?.name || 'No company assigned'} •{' '}
+            {sangpoUser?.Sangpo_Company?.[0]?.name || t('dashboard.noCompanyAssigned')} •{' '}
             <span style={{ textTransform: 'capitalize', fontWeight: 700 }}>{sangpoUser?.role || 'user'}</span>
           </p>
         </div>
@@ -163,36 +167,36 @@ export default async function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ maxWidth: '700px' }}>
             <p style={{ margin: 0, fontSize: '0.82rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)' }}>
-              Project Overview
+              {t('dashboard.projectOverview')}
             </p>
             <h2 style={{ margin: '0.35rem 0 0.55rem', fontSize: '1.8rem', fontWeight: 800 }}>
-              {projectRecord?.name || 'Sangpo Temple Renovation Account'}
+              {projectRecord?.name || t('dashboard.defaultProjectName')}
             </h2>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.82)', lineHeight: 1.7 }}>
-              Track contract awards, approved certificates, outstanding balances, and VO growth without mixing original award values.
+              {t('dashboard.overviewText')}
             </p>
             <p style={{ margin: '1rem 0 0', color: 'rgba(255,255,255,0.78)', fontSize: '0.92rem', lineHeight: 1.65 }}>
-              Budget logic: Total Awarded Contract + Total VO = committed value. Remaining balance is based on the project budget after deducting that committed value.
+              {t('dashboard.budgetLogic')}
             </p>
           </div>
           <div style={{ minWidth: '320px', display: 'flex', justifyContent: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <BudgetProgressRing percent={usagePercent} isOverBudget={isOverBudget} />
               <div style={{ minWidth: '220px' }}>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>Overall Budget</p>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>{t('dashboard.overallBudget')}</p>
                 <p style={{ margin: '0.2rem 0 0.45rem', fontSize: '2rem', fontWeight: 800 }}>
                   {formatCurrency(projectBudget)}
                 </p>
                 <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.84rem' }}>
-                  {isOverBudget ? 'Over Budget Amount' : 'Remaining Balance'}
+                  {isOverBudget ? t('dashboard.overBudgetAmount') : t('dashboard.remainingBalance')}
                 </p>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '1.75rem', fontWeight: 800, color: isOverBudget ? '#fecaca' : 'white' }}>
                   {formatCurrency(Math.abs(remainingBudget))}
                 </p>
                 <p style={{ margin: '0.45rem 0 0', color: isOverBudget ? '#fecaca' : 'rgba(255,255,255,0.78)', fontSize: '0.92rem', fontWeight: 700 }}>
                   {isOverBudget
-                    ? `Exceeded budget by ${budgetExceededPercent.toFixed(1)}%`
-                    : `Using ${usagePercentRaw.toFixed(1)}% of project budget`}
+                    ? t('dashboard.exceededBudgetBy', { value: budgetExceededPercent.toFixed(1) })
+                    : t('dashboard.usingBudget', { value: usagePercentRaw.toFixed(1) })}
                 </p>
               </div>
             </div>
@@ -201,11 +205,11 @@ export default async function Dashboard() {
       </div>
 
       <div style={{ ...summaryGridStyle, marginBottom: '1.4rem' }}>
-        <SummaryCard label="Suppliers" value={String(supplierCards.length)} accent={colors.brand} />
-        <SummaryCard label="Awarded Contract" value={formatCurrency(totalAwarded)} accent={colors.gold} />
-        <SummaryCard label="VO Total" value={formatCurrency(totalVo)} accent={colors.warning} />
+        <SummaryCard label={t('dashboard.suppliers')} value={String(supplierCards.length)} accent={colors.brand} />
+        <SummaryCard label={t('dashboard.awardedContract')} value={formatCurrency(totalAwarded)} accent={colors.gold} />
+        <SummaryCard label={t('dashboard.voTotal')} value={formatCurrency(totalVo)} accent={colors.warning} />
         <SummaryCard
-          label={isOverBudget ? 'Over Budget' : 'Remaining Budget'}
+          label={isOverBudget ? t('dashboard.overBudget') : t('dashboard.remainingBudget')}
           value={formatCurrency(Math.abs(remainingBudget))}
           accent={isOverBudget ? '#dc2626' : colors.success}
         />
@@ -215,19 +219,19 @@ export default async function Dashboard() {
         <div style={panelStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Supplier Progress</h2>
+              <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>{t('dashboard.supplierProgress')}</h2>
               <p style={{ ...sectionSubtitleStyle, fontSize: '0.92rem', marginTop: '0.25rem' }}>
-                Cleaner contract progress by supplier, with VO shown separately.
+                {t('dashboard.supplierProgressSubtitle')}
               </p>
             </div>
           </div>
 
           {supplierCards.length === 0 ? (
-            <EmptyState message="No supplier data yet. Add suppliers with contract awards to start seeing progress." />
+            <EmptyState message={t('dashboard.noSupplierData')} />
           ) : (
             <div style={{ display: 'grid', gap: '0.95rem' }}>
               {supplierCards.map((supplier) => (
-                <SupplierProgressCard key={supplier.id} supplier={supplier} />
+                <SupplierProgressCard key={supplier.id} supplier={supplier} language={language} />
               ))}
             </div>
           )}
@@ -235,23 +239,23 @@ export default async function Dashboard() {
 
         <div style={{ display: 'grid', gap: '1rem' }}>
           <div style={panelStyle}>
-            <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Financial Snapshot</h2>
+            <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>{t('dashboard.financialSnapshot')}</h2>
             <div style={{ display: 'grid', gap: '0.9rem', marginTop: '1rem' }}>
-              <SnapshotRow label="Project Budget" value={formatCurrency(projectRecord?.overall_budget || 0)} />
-              <SnapshotRow label="Committed Value (Awarded Contract)" value={formatCurrency(committedAwardedContract)} />
-              <SnapshotRow label="Approved Payment Amount" value={formatCurrency(totalApproved)} />
-              <SnapshotRow label="Contract Remaining (Prepare to Pay)" value={formatCurrency(contractRemaining)} />
-              <SnapshotRow label="Approved VO Payment Amount" value={formatCurrency(approvedVoPaymentAmount)} />
-              <SnapshotRow label="Cash Flow (Balance to Use)" value={formatCurrency(cashFlowBalance)} />
+              <SnapshotRow label={t('dashboard.projectBudget')} value={formatCurrency(projectRecord?.overall_budget || 0)} />
+              <SnapshotRow label={t('dashboard.committedAwardedContract')} value={formatCurrency(committedAwardedContract)} />
+              <SnapshotRow label={t('dashboard.approvedPaymentAmount')} value={formatCurrency(totalApproved)} />
+              <SnapshotRow label={t('dashboard.contractRemaining')} value={formatCurrency(contractRemaining)} />
+              <SnapshotRow label={t('dashboard.approvedVoPaymentAmount')} value={formatCurrency(approvedVoPaymentAmount)} />
+              <SnapshotRow label={t('dashboard.cashFlowBalance')} value={formatCurrency(cashFlowBalance)} />
             </div>
           </div>
 
           <div style={panelStyle}>
-            <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Workflow Reminder</h2>
+            <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>{t('dashboard.workflowReminder')}</h2>
             <div style={{ display: 'grid', gap: '0.85rem', marginTop: '1rem' }}>
-              <WorkflowItem title="1. Set project budget" description="Keep the base budget clear before supplier awards and claims." />
-              <WorkflowItem title="2. Track supplier awards" description="Original awarded contracts stay fixed while VO increases are recorded separately." />
-              <WorkflowItem title="3. Prepare certificates" description="Admin prepares the certificate, then submits it for manager approval." />
+              <WorkflowItem title={t('dashboard.workflow1Title')} description={t('dashboard.workflow1Desc')} />
+              <WorkflowItem title={t('dashboard.workflow2Title')} description={t('dashboard.workflow2Desc')} />
+              <WorkflowItem title={t('dashboard.workflow3Title')} description={t('dashboard.workflow3Desc')} />
             </div>
           </div>
         </div>
@@ -309,6 +313,7 @@ function SummaryCard({ label, value, accent }: { label: string; value: string; a
 
 function SupplierProgressCard({
   supplier,
+  language,
 }: {
   supplier: {
     id: string;
@@ -321,7 +326,9 @@ function SupplierProgressCard({
     voPercent: number;
     scope: string;
   };
+  language: 'en' | 'zh';
 }) {
+  const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
   const voBadgeStyle = supplier.voTotal > 0
     ? { color: colors.warning, backgroundColor: colors.warningTint, borderColor: '#fcd34d' }
     : { color: colors.success, backgroundColor: colors.successTint, borderColor: '#86efac' };
@@ -360,13 +367,13 @@ function SupplierProgressCard({
 
       <div style={{ marginBottom: '0.75rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.45rem', fontSize: '0.88rem', color: colors.muted }}>
-          <span>Approved Progress</span>
+          <span>{t('dashboard.approvedProgress')}</span>
           <strong style={{ color: colors.ink }}>{supplier.approvedPercent.toFixed(0)}%</strong>
         </div>
         <Link
           href={`/dashboard/payments?supplier=${supplier.id}`}
           style={{ display: 'block', textDecoration: 'none' }}
-          title={`View ${supplier.name} payment history`}
+          title={t('dashboard.viewPaymentHistory', { name: supplier.name })}
         >
           <div style={{ width: '100%', height: '10px', borderRadius: '999px', backgroundColor: '#ebe7e5', overflow: 'hidden', cursor: 'pointer' }}>
             <div
@@ -382,10 +389,10 @@ function SupplierProgressCard({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem 1rem' }}>
-        <MetricBlock label="Awarded Contract" value={formatCurrency(supplier.awarded)} />
-        <MetricBlock label="Approved Amount" value={formatCurrency(supplier.approved)} />
-        <MetricBlock label="Outstanding Balance" value={formatCurrency(supplier.balance)} />
-        <MetricBlock label="VO Total" value={formatCurrency(supplier.voTotal)} />
+        <MetricBlock label={t('dashboard.awardedContract')} value={formatCurrency(supplier.awarded)} />
+        <MetricBlock label={t('dashboard.approvedAmount')} value={formatCurrency(supplier.approved)} />
+        <MetricBlock label={t('dashboard.outstandingBalance')} value={formatCurrency(supplier.balance)} />
+        <MetricBlock label={t('dashboard.voTotal')} value={formatCurrency(supplier.voTotal)} />
       </div>
     </div>
   );

@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getServerLanguage } from '@/lib/i18n/server';
+import { translate } from '@/lib/i18n/translations';
+import LanguageToggle from '../language-toggle';
 import DashboardNavLink from './nav-link';
 import { colors, contentWrapStyle } from './ui';
 
@@ -9,12 +12,14 @@ type SangpoUser = {
 };
 
 function formatRoleLabel(role?: string | null) {
-  if (!role) return 'User';
+  if (!role) return '';
   return role.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient();
+  const language = getServerLanguage();
+  const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -31,16 +36,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const isAdmin = sangpoUser?.role === 'admin';
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard' },
-    ...(isAdmin ? [{ href: '/dashboard/company', label: 'Company Admin' }] : []),
-    { href: '/dashboard/project', label: 'Project Budget' },
-    { href: '/dashboard/suppliers', label: 'Suppliers' },
-    { href: '/dashboard/milestones', label: 'Milestones' },
-    { href: '/dashboard/variation-orders', label: 'Variation Orders' },
-    { href: '/dashboard/documents', label: 'Documents' },
-    { href: '/dashboard/payments', label: 'Payments' },
-    { href: '/dashboard/certificates', label: 'Certificates' },
+    { href: '/dashboard', label: t('sidebar.dashboard') },
+    ...(isAdmin ? [{ href: '/dashboard/company', label: t('sidebar.companyAdmin') }] : []),
+    { href: '/dashboard/project', label: t('sidebar.projectBudget') },
+    { href: '/dashboard/suppliers', label: t('sidebar.suppliers') },
+    { href: '/dashboard/milestones', label: t('sidebar.milestones') },
+    { href: '/dashboard/variation-orders', label: t('sidebar.variationOrders') },
+    { href: '/dashboard/documents', label: t('sidebar.documents') },
+    { href: '/dashboard/payments', label: t('sidebar.payments') },
+    { href: '/dashboard/certificates', label: t('sidebar.certificates') },
   ];
+
+  const roleLabel = sangpoUser?.role ? formatRoleLabel(sangpoUser.role) : t('role.user');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: `linear-gradient(180deg, ${colors.page} 0%, #ffffff 100%)` }}>
@@ -67,7 +74,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 margin: 0,
                 lineHeight: '1.2'
               }}>
-                SangpoAcc
+                {t('app.name')}
               </h2>
               <p style={{
                 color: 'rgba(255,255,255,0.72)',
@@ -75,16 +82,19 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 margin: 0,
                 marginTop: '0.15rem'
               }}>
-                Renovation account control
+                {t('app.subtitle')}
               </p>
             </div>
           </div>
+          <div style={{ marginTop: '0.85rem' }}>
+            <LanguageToggle dark />
+          </div>
           <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
             <p style={{ color: 'rgba(255,255,255,0.64)', fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0, marginBottom: '0.2rem' }}>
-              Signed in as
+              {t('sidebar.signedInAs')}
             </p>
             <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: '700', margin: 0, textTransform: 'capitalize' }}>
-              {formatRoleLabel(sangpoUser?.role)}
+              {roleLabel}
             </p>
           </div>
         </div>
@@ -115,7 +125,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               transition: 'all 0.2s ease'
             }}
             >
-              Sign Out
+              {t('sidebar.signOut')}
             </button>
           </form>
         </div>

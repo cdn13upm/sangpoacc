@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import LanguageToggle from '../language-toggle';
+import { useLanguage } from '../language-provider';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -12,6 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +102,9 @@ export default function LoginPage() {
           borderTopRightRadius: '1rem',
           background: 'linear-gradient(90deg, #780000 0%, #d32f2f 55%, #780000 100%)'
         }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+          <LanguageToggle />
+        </div>
         <div style={{ marginBottom: '2rem' }}>
           <img
             src="/logo.png"
@@ -111,10 +117,10 @@ export default function LoginPage() {
             color: '#780000',
             marginBottom: '0.5rem'
           }}>
-            SangpoAcc
+            {t('auth.login.title')}
           </h1>
           <p style={{ color: '#6b7280', fontSize: '0.95rem' }}>
-            Account Tracking System
+            {t('auth.login.subtitle')}
           </p>
         </div>
 
@@ -127,14 +133,14 @@ export default function LoginPage() {
               color: '#374151',
               marginBottom: '0.5rem'
             }}>
-              Email or Username
+              {t('auth.login.identifier')}
             </label>
             <input
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
-              placeholder="Enter email or username"
+              placeholder={t('auth.login.identifierPlaceholder')}
               style={{
                 display: 'block',
                 width: '100%',
@@ -159,7 +165,7 @@ export default function LoginPage() {
               color: '#374151',
               marginBottom: '0.5rem'
             }}>
-              Password
+              {t('auth.login.password')}
             </label>
             <input
               type="password"
@@ -194,7 +200,7 @@ export default function LoginPage() {
                 fontWeight: '700',
               }}
             >
-              Forgot Password?
+              {t('auth.login.forgotPassword')}
             </Link>
           </div>
 
@@ -219,12 +225,12 @@ export default function LoginPage() {
             onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5a0000')}
             onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#780000')}
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? t('auth.login.signingIn') : t('auth.login.signIn')}
           </button>
 
           <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
             <p style={{ color: '#6b7280', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-              Don't have an account?
+              {t('auth.login.noAccount')}
             </p>
             <Link
               href="/register"
@@ -238,7 +244,7 @@ export default function LoginPage() {
               onMouseEnter={(e) => e.currentTarget.style.color = '#5a0000'}
               onMouseLeave={(e) => e.currentTarget.style.color = '#780000'}
             >
-              Register User
+              {t('auth.login.register')}
             </Link>
           </div>
         </form>

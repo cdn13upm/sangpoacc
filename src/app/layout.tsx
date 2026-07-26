@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
+import { getServerLanguage } from '@/lib/i18n/server';
+import { LanguageProvider } from './language-provider';
 
 export const metadata: Metadata = {
   title: "Sangpo Account Tracking System",
@@ -11,9 +13,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const language = getServerLanguage();
+
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang={language}>
+      <body className="antialiased">
+        <LanguageProvider initialLanguage={language}>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }
