@@ -37,6 +37,7 @@ type MilestoneRecord = {
 type VariationOrderRecord = {
   supplier_id: string;
   amount: number | null;
+  status: string | null;
 };
 
 function formatCurrency(value: number | null | undefined) {
@@ -86,7 +87,7 @@ export default async function Dashboard() {
       ? supabase.from('Sangpo_Milestone').select('supplier_id, approved_invoice_total').eq('company_id', companyId)
       : Promise.resolve({ data: [] }),
     companyId
-      ? supabase.from('Sangpo_Variation_Order').select('supplier_id, amount').eq('company_id', companyId)
+      ? supabase.from('Sangpo_Variation_Order').select('supplier_id, amount, status').eq('company_id', companyId)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -124,8 +125,14 @@ export default async function Dashboard() {
   const totalAwarded = supplierCards.reduce((sum, item) => sum + item.awarded, 0);
   const totalApproved = supplierCards.reduce((sum, item) => sum + item.approved, 0);
   const totalVo = supplierCards.reduce((sum, item) => sum + item.voTotal, 0);
+  const approvedVoPaymentAmount = voRows
+    .filter((vo) => vo.status === 'approved')
+    .reduce((sum, vo) => sum + Number(vo.amount || 0), 0);
   const projectBudget = Number(projectRecord?.overall_budget || 0);
   const committedValue = totalAwarded + totalVo;
+  const committedAwardedContract = totalAwarded;
+  const contractRemaining = committedAwardedContract - totalApproved;
+  const cashFlowBalance = projectBudget - totalApproved - approvedVoPaymentAmount;
   const remainingBudget = projectBudget - committedValue;
   const usagePercentRaw = projectBudget > 0 ? (committedValue / projectBudget) * 100 : 0;
   const usagePercent = clampPercent(usagePercentRaw);
@@ -231,10 +238,11 @@ export default async function Dashboard() {
             <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: colors.ink }}>Financial Snapshot</h2>
             <div style={{ display: 'grid', gap: '0.9rem', marginTop: '1rem' }}>
               <SnapshotRow label="Project Budget" value={formatCurrency(projectRecord?.overall_budget || 0)} />
-              <SnapshotRow label="Committed Value" value={formatCurrency(committedValue)} />
-              <SnapshotRow label="Approved Amount" value={formatCurrency(totalApproved)} />
-              <SnapshotRow label="Total VO" value={formatCurrency(totalVo)} />
-              <SnapshotRow label="Milestones" value={String(milestoneRows.length)} />
+              <SnapshotRow label="Committed Value (Awarded Contract)" value={formatCurrency(committedAwardedContract)} />
+              <SnapshotRow label="Approved Payment Amount" value={formatCurrency(totalApproved)} />
+              <SnapshotRow label="Contract Remaining (Prepare to Pay)" value={formatCurrency(contractRemaining)} />
+              <SnapshotRow label="Approved VO Payment Amount" value={formatCurrency(approvedVoPaymentAmount)} />
+              <SnapshotRow label="Cash Flow (Balance to Use)" value={formatCurrency(cashFlowBalance)} />
             </div>
           </div>
 
