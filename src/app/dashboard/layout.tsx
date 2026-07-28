@@ -49,7 +49,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         { href: '/dashboard/suppliers', label: t('sidebar.suppliers') },
         { href: '/dashboard/milestones', label: t('sidebar.milestones') },
         { href: '/dashboard/variation-orders', label: t('sidebar.variationOrders') },
-        { href: '/dashboard/documents', label: t('sidebar.documents') },
+        ...(isAdmin ? [{ href: '/dashboard/documents', label: t('sidebar.documents') }] : []),
         { href: '/dashboard/payments', label: t('sidebar.payments') },
         { href: '/dashboard/certificates', label: t('sidebar.certificates') },
       ];

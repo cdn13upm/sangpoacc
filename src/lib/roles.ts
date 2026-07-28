@@ -16,11 +16,20 @@ export function isViewerRole(role: string | null | undefined) {
 }
 
 export function canAccessDashboardPath(role: string | null | undefined, pathname: string) {
+  if (role === 'admin') {
+    return true;
+  }
+
+  if (pathname === '/dashboard/documents' || pathname.startsWith('/dashboard/documents/')) {
+    return false;
+  }
+
   if (!isViewerRole(role)) {
     return true;
   }
 
-  return viewerAllowedDashboardPaths.some(({ pathname: allowedPath, allowChildren }) =>
-    pathname === allowedPath || (allowChildren && pathname.startsWith(`${allowedPath}/`))
-  );
+  return viewerAllowedDashboardPaths.some(({ pathname: allowedPath, allowChildren }) => {
+    if (pathname === allowedPath) return true;
+    return allowChildren && pathname.startsWith(`${allowedPath}/`);
+  });
 }
