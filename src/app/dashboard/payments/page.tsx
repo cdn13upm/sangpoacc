@@ -138,6 +138,10 @@ export default async function PaymentsPage({
   const awarded = Number(selectedSupplier?.contract_award_value || 0);
   const approved = selectedMilestones.reduce((sum, item) => sum + Number(item.approved_invoice_total || 0), 0);
   const voTotal = selectedVos.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const approvedVo = selectedVos
+    .filter((item) => item.status === 'approved')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalPayment = approved + approvedVo;
   const balance = Math.max(awarded - approved, 0);
   const approvedPercent = awarded > 0 ? clampPercent((approved / awarded) * 100) : 0;
   const voPercent = awarded > 0 ? (voTotal / awarded) * 100 : 0;
@@ -213,6 +217,7 @@ export default async function PaymentsPage({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem 1rem' }}>
                 <MetricBlock label="Awarded Contract" value={formatCurrency(awarded)} />
                 <MetricBlock label="Approved Amount" value={formatCurrency(approved)} />
+                <MetricBlock label="Total Payment" value={formatCurrency(totalPayment)} />
                 <MetricBlock label="Outstanding Balance" value={formatCurrency(balance)} />
                 <MetricBlock label="VO Total" value={formatCurrency(voTotal)} />
               </div>

@@ -65,6 +65,7 @@ export const translations = {
     'dashboard.approvedProgress': 'Approved Progress',
     'dashboard.outstandingBalance': 'Outstanding Balance',
     'dashboard.approvedAmount': 'Approved Amount',
+    'dashboard.totalPayment': 'Total Payment',
     'role.user': 'User',
   },
   zh: {
@@ -131,6 +132,7 @@ export const translations = {
     'dashboard.approvedProgress': '已批进度',
     'dashboard.outstandingBalance': '未清余额',
     'dashboard.approvedAmount': '已批金额',
+    'dashboard.totalPayment': '付款总额',
     'role.user': '用户',
   },
 } as const;

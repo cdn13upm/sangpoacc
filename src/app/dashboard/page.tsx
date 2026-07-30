@@ -111,6 +111,10 @@ export default async function Dashboard() {
     const voTotal = voRows
       .filter((vo) => vo.supplier_id === supplier.id)
       .reduce((sum, vo) => sum + Number(vo.amount || 0), 0);
+    const approvedVo = voRows
+      .filter((vo) => vo.supplier_id === supplier.id && vo.status === 'approved')
+      .reduce((sum, vo) => sum + Number(vo.amount || 0), 0);
+    const totalPayment = approved + approvedVo;
 
     const approvedPercent = awarded > 0 ? clampPercent((approved / awarded) * 100) : 0;
     const voPercent = awarded > 0 ? (voTotal / awarded) * 100 : 0;
@@ -123,6 +127,7 @@ export default async function Dashboard() {
       approved,
       balance,
       voTotal,
+      totalPayment,
       approvedPercent,
       voPercent,
       scope: supplier.scope_of_work || t('dashboard.scopeNotAdded'),
@@ -325,6 +330,7 @@ function SupplierProgressCard({
     approved: number;
     balance: number;
     voTotal: number;
+    totalPayment: number;
     approvedPercent: number;
     voPercent: number;
     scope: string;
@@ -394,6 +400,7 @@ function SupplierProgressCard({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem 1rem' }}>
         <MetricBlock label={t('dashboard.awardedContract')} value={formatCurrency(supplier.awarded)} />
         <MetricBlock label={t('dashboard.approvedAmount')} value={formatCurrency(supplier.approved)} />
+        <MetricBlock label={t('dashboard.totalPayment')} value={formatCurrency(supplier.totalPayment)} />
         <MetricBlock label={t('dashboard.outstandingBalance')} value={formatCurrency(supplier.balance)} />
         <MetricBlock label={t('dashboard.voTotal')} value={formatCurrency(supplier.voTotal)} />
       </div>
