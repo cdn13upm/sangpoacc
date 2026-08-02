@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getActiveProjectId } from '@/lib/projects';
+import { getActiveProjectId } from '@/lib/projects-server';
 import { getServerLanguage } from '@/lib/i18n/server';
 import { translate } from '@/lib/i18n/translations';
 import {

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getActiveProjectId } from '@/lib/projects';
+import { getActiveProjectId } from '@/lib/projects-server';
 import PaymentSupplierFilter from './supplier-filter';
 import PaymentPrintWrapper from './print-wrapper';
 import {

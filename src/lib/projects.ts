@@ -1,14 +1,3 @@
-import { cookies } from 'next/headers';
-
-export function getActiveProjectId(): string | null {
-  try {
-    const cookieStore = cookies();
-    return cookieStore.get('sangpo_project_id')?.value || null;
-  } catch {
-    return null;
-  }
-}
-
 export function getActiveProjectIdFromRequest(request: Request): string | null {
   try {
     const headerId = request.headers.get('X-Sangpo-Project-Id');
