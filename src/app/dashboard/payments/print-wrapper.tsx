@@ -52,6 +52,7 @@ export default function PaymentPrintWrapper({
   summary,
   milestoneRecords,
   voRecords,
+  unpaidInvoiceRecords,
   children,
 }: {
   companyName: string | null;
@@ -73,6 +74,16 @@ export default function PaymentPrintWrapper({
     reference: string;
     status: string;
     description: string;
+  }>;
+  unpaidInvoiceRecords: Array<{
+    supplier: string;
+    invoiceNumber: string;
+    invoiceDate: string;
+    dueDate: string;
+    amount: string;
+    status: string;
+    description: string;
+    remark: string;
   }>;
   children: ReactNode;
 }) {
@@ -224,7 +235,7 @@ export default function PaymentPrintWrapper({
           </div>
         </div>
 
-        <div>
+        <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 10px' }}>VO Payment Records</h2>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -254,6 +265,48 @@ export default function PaymentPrintWrapper({
                       <td style={tdStyle}>{row.reference}</td>
                       <td style={tdStyle}>{row.status}</td>
                       <td style={tdStyle}>{row.description}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 10px' }}>Unpaid Invoices</h2>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f3f4f6' }}>
+                  <th style={thStyle}>Supplier</th>
+                  <th style={thStyle}>Invoice #</th>
+                  <th style={thStyle}>Invoice Date</th>
+                  <th style={thStyle}>Due Date</th>
+                  <th style={thAlignRightStyle}>Amount</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Description</th>
+                  <th style={thStyle}>Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unpaidInvoiceRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={tdEmptyStyle}>
+                      No unpaid invoices
+                    </td>
+                  </tr>
+                ) : (
+                  unpaidInvoiceRecords.map((row, idx) => (
+                    <tr key={`u-${idx}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={tdStyle}>{row.supplier}</td>
+                      <td style={tdStyle}>{row.invoiceNumber}</td>
+                      <td style={tdStyle}>{row.invoiceDate}</td>
+                      <td style={tdStyle}>{row.dueDate}</td>
+                      <td style={tdNumStyle}>{row.amount}</td>
+                      <td style={tdStyle}>{row.status}</td>
+                      <td style={tdStyle}>{row.description}</td>
+                      <td style={tdStyle}>{row.remark}</td>
                     </tr>
                   ))
                 )}

@@ -58,6 +58,19 @@ type VariationOrderRecord = {
   status: string;
 };
 
+type UnpaidInvoiceRecord = {
+  id: string;
+  supplier_id: string;
+  invoice_number: string;
+  invoice_date: string | null;
+  due_date: string | null;
+  invoice_amount: number | null;
+  description: string | null;
+  remark: string | null;
+  status: string;
+  Sangpo_Supplier?: { name: string } | { name: string }[] | null;
+};
+
 function formatCurrency(value: number | null | undefined) {
   const safeValue = Number.isFinite(Number(value)) ? Number(value) : 0;
   return new Intl.NumberFormat('en-MY', {
@@ -98,6 +111,18 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
+function formatStatus(value: string | null | undefined) {
+  if (!value) return '-';
+  const map: Record<string, string> = {
+    draft: 'Draft',
+    pending_approval: 'Pending Approval',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    paid: 'Paid',
+  };
+  return map[value] || value;
+}
+
 export default async function PaymentsPage({
   searchParams,
 }: {
@@ -121,7 +146,7 @@ export default async function PaymentsPage({
   const companyId = sangpoUser?.company_id;
   const activeProjectId = getActiveProjectId();
 
-  const [{ data: company }, { data: suppliers }, { data: milestones }, { data: variationOrders }] = await Promise.all([
+  const [{ data: company }, { data: suppliers }, { data: milestones }, { data: variationOrders }, { data: unpaidInvoices }] = await Promise.all([
     companyId
       ? supabase.from('Sangpo_Company').select('name').eq('id', companyId).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -163,12 +188,27 @@ export default async function PaymentsPage({
           return query.order('created_at', { ascending: false });
         })()
       : Promise.resolve({ data: [] }),
+    companyId
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Unpaid_Invoice')
+            .select(
+              'id, supplier_id, invoice_number, invoice_date, due_date, invoice_amount, description, remark, status, Sangpo_Supplier(name)'
+            )
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query.order('created_at', { ascending: false });
+        })()
+      : Promise.resolve({ data: [] }),
   ]);
 
   const companyRecord = company as CompanyRecord | null;
   const supplierRows = (suppliers || []) as SupplierRecord[];
   const milestoneRows = (milestones || []) as MilestoneRecord[];
   const voRows = (variationOrders || []) as VariationOrderRecord[];
+  const unpaidInvoiceRows = (unpaidInvoices || []) as UnpaidInvoiceRecord[];
 
   const selectedSupplier =
     supplierRows.find((supplier) => supplier.id === searchParams?.supplier) || supplierRows[0] || null;
@@ -180,6 +220,9 @@ export default async function PaymentsPage({
   const selectedVos = selectedSupplierId
     ? voRows.filter((item) => item.supplier_id === selectedSupplierId)
     : [];
+  const selectedUnpaidInvoices = selectedSupplierId
+    ? unpaidInvoiceRows.filter((item) => item.supplier_id === selectedSupplierId)
+    : unpaidInvoiceRows;
 
   const awarded = safeNumber(selectedSupplier?.contract_award_value || 0);
   const approved = selectedMilestones.reduce(
@@ -201,6 +244,9 @@ export default async function PaymentsPage({
     hour12: false,
   }).format(new Date());
 
+  const unpaidTotal = selectedUnpaidInvoices.reduce((sum, item) => sum + safeNumber(item.invoice_amount), 0);
+  const unpaidCount = selectedUnpaidInvoices.length;
+
   const summaryForPrint = [
     { label: 'Awarded Contract', value: formatCurrency(awarded) },
     { label: 'Approved Amount', value: formatCurrency(approved) },
@@ -209,6 +255,8 @@ export default async function PaymentsPage({
     { label: 'Total Payment', value: formatCurrency(totalPayment) },
     { label: 'Milestone Records', value: String(selectedMilestones.length) },
     { label: 'VO Records', value: String(selectedVos.length) },
+    { label: 'Unpaid Invoices', value: String(unpaidCount) },
+    { label: 'Unpaid Amount', value: formatCurrency(unpaidTotal) },
   ];
 
   const milestoneRowsForPrint = selectedMilestones.map((item) => ({
@@ -231,6 +279,23 @@ export default async function PaymentsPage({
     description: item.description || '-',
   }));
 
+  function getSupplierName(value: UnpaidInvoiceRecord['Sangpo_Supplier']): string {
+    if (!value) return selectedSupplier?.name || '-';
+    if (Array.isArray(value)) return value[0]?.name || selectedSupplier?.name || '-';
+    return value.name || selectedSupplier?.name || '-';
+  }
+
+  const unpaidInvoiceRowsForPrint = selectedUnpaidInvoices.map((item) => ({
+    supplier: getSupplierName(item.Sangpo_Supplier),
+    invoiceNumber: item.invoice_number,
+    invoiceDate: formatDate(item.invoice_date),
+    dueDate: formatDate(item.due_date),
+    amount: formatCurrency(item.invoice_amount),
+    status: formatStatus(item.status),
+    description: item.description || '-',
+    remark: item.remark || '-',
+  }));
+
   return (
     <div>
       <div style={pageHeaderStyle}>
@@ -249,6 +314,7 @@ export default async function PaymentsPage({
         summary={summaryForPrint}
         milestoneRecords={milestoneRowsForPrint}
         voRecords={voRowsForPrint}
+        unpaidInvoiceRecords={unpaidInvoiceRowsForPrint}
       >
         {supplierRows.length === 0 ? (
           <div style={panelStyle}>
@@ -382,6 +448,8 @@ export default async function PaymentsPage({
                       .length
                 )}
               />
+              <SummaryCard label="Unpaid Invoices" value={String(unpaidCount)} />
+              <SummaryCard label="Unpaid Amount" value={formatCurrency(unpaidTotal)} />
             </div>
 
             <div style={{ ...panelStyle, marginBottom: '1.5rem' }}>
@@ -475,6 +543,59 @@ export default async function PaymentsPage({
                           <BodyCell>{item.payment_reference || '-'}</BodyCell>
                           <BodyCell>{item.status}</BodyCell>
                           <BodyCell>{item.description || '-'}</BodyCell>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ ...panelStyle, marginTop: '1.5rem' }}>
+              <h2 style={panelTitleStyle}>Unpaid Invoices</h2>
+              <div style={tableWrapStyle}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1100px' }}>
+                  <thead style={{ backgroundColor: '#f9fafb' }}>
+                    <tr>
+                      <HeaderCell>Supplier</HeaderCell>
+                      <HeaderCell>Invoice #</HeaderCell>
+                      <HeaderCell>Invoice Date</HeaderCell>
+                      <HeaderCell>Due Date</HeaderCell>
+                      <HeaderCell>Amount</HeaderCell>
+                      <HeaderCell>Status</HeaderCell>
+                      <HeaderCell>Description</HeaderCell>
+                      <HeaderCell>Remark</HeaderCell>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedUnpaidInvoices.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{
+                            padding: '2rem 1rem',
+                            textAlign: 'center',
+                            color: colors.muted,
+                          }}
+                        >
+                          No unpaid invoices found for this supplier.
+                        </td>
+                      </tr>
+                    ) : (
+                      selectedUnpaidInvoices.map((item) => (
+                        <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                          <BodyCell>
+                            {(Array.isArray(item.Sangpo_Supplier)
+                              ? item.Sangpo_Supplier[0]?.name
+                              : item.Sangpo_Supplier?.name) || selectedSupplier?.name || '-'}
+                          </BodyCell>
+                          <BodyCell>{item.invoice_number}</BodyCell>
+                          <BodyCell>{formatDate(item.invoice_date)}</BodyCell>
+                          <BodyCell>{formatDate(item.due_date)}</BodyCell>
+                          <BodyCell>{formatCurrency(item.invoice_amount)}</BodyCell>
+                          <BodyCell>{formatStatus(item.status)}</BodyCell>
+                          <BodyCell>{item.description || '-'}</BodyCell>
+                          <BodyCell>{item.remark || '-'}</BodyCell>
                         </tr>
                       ))
                     )}
