@@ -58,11 +58,17 @@ type VariationOrderRecord = {
 };
 
 function formatCurrency(value: number | null | undefined) {
+  const safeValue = Number.isFinite(Number(value)) ? Number(value) : 0;
   return new Intl.NumberFormat('en-MY', {
     style: 'currency',
     currency: 'MYR',
     minimumFractionDigits: 2,
-  }).format(Number(value || 0));
+  }).format(safeValue);
+}
+
+function safeNumber(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function formatDate(value: string | null | undefined) {
@@ -158,15 +164,16 @@ export default async function PaymentsPage({
     ? voRows.filter((item) => item.supplier_id === selectedSupplierId)
     : [];
 
-  const awarded = Number(selectedSupplier?.contract_award_value || 0);
+  const awarded = safeNumber(selectedSupplier?.contract_award_value || 0);
   const approved = selectedMilestones.reduce(
-    (sum, item) => sum + Number(item.approved_invoice_total || 0),
+    (sum, item) => sum + safeNumber(item.approved_invoice_total),
+    0
   );
-  const voTotal = selectedVos.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const totalPayment = approved + voTotal;
-  const balance = Math.max(awarded - approved, 0);
-  const approvedPercent = awarded > 0 ? clampPercent((approved / awarded) * 100) : 0;
-  const voPercent = awarded > 0 ? (voTotal / awarded) * 100 : 0;
+  const voTotal = selectedVos.reduce((sum, item) => sum + safeNumber(item.amount), 0);
+  const totalPayment = safeNumber(approved) + safeNumber(voTotal);
+  const balance = Math.max(safeNumber(awarded) - safeNumber(approved), 0);
+  const approvedPercent = awarded > 0 ? clampPercent((safeNumber(approved) / safeNumber(awarded)) * 100) : 0;
+  const voPercent = awarded > 0 ? (safeNumber(voTotal) / safeNumber(awarded)) * 100 : 0;
 
   const generatedAt = new Intl.DateTimeFormat('en-MY', {
     year: 'numeric',
@@ -193,7 +200,7 @@ export default async function PaymentsPage({
     date: formatDate(item.payment_date),
     reference: item.payment_reference || '-',
     balance: formatCurrency(
-      Number(item.milestone_amount || 0) - Number(item.approved_invoice_total || 0)
+      safeNumber(item.milestone_amount) - safeNumber(item.approved_invoice_total)
     ),
     description: item.description || '-',
   }));
@@ -399,8 +406,8 @@ export default async function PaymentsPage({
                           <BodyCell>{item.payment_reference || '-'}</BodyCell>
                           <BodyCell>
                             {formatCurrency(
-                              Number(item.milestone_amount || 0) -
-                                Number(item.approved_invoice_total || 0)
+                              safeNumber(item.milestone_amount) -
+                                safeNumber(item.approved_invoice_total)
                             )}
                           </BodyCell>
                           <BodyCell>{item.description || '-'}</BodyCell>
