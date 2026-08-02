@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getActiveProjectId } from '@/lib/projects-server';
 import PaymentSupplierFilter from './supplier-filter';
@@ -129,6 +130,11 @@ export default async function PaymentsPage({
   searchParams?: { supplier?: string };
 }) {
   const supabase = createClient();
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -190,7 +196,7 @@ export default async function PaymentsPage({
       : Promise.resolve({ data: [] }),
     companyId
       ? (() => {
-          let query = supabase
+          let query = supabaseAdmin
             .from('Sangpo_Unpaid_Invoice')
             .select(
               'id, supplier_id, invoice_number, invoice_date, due_date, invoice_amount, description, remark, status, Sangpo_Supplier(name)'
