@@ -15,11 +15,20 @@ CREATE TABLE IF NOT EXISTS public."Sangpo_Unpaid_Invoice" (
 
 ALTER TABLE public."Sangpo_Unpaid_Invoice" ENABLE ROW LEVEL SECURITY;
 
+CREATE INDEX IF NOT EXISTS unpaid_invoice_company_idx ON public."Sangpo_Unpaid_Invoice"(company_id);
+CREATE INDEX IF NOT EXISTS unpaid_invoice_supplier_idx ON public."Sangpo_Unpaid_Invoice"(supplier_id);
+CREATE INDEX IF NOT EXISTS unpaid_invoice_status_idx ON public."Sangpo_Unpaid_Invoice"(status);
+CREATE INDEX IF NOT EXISTS unpaid_invoice_invoice_number_idx ON public."Sangpo_Unpaid_Invoice"(invoice_number);
+
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'unpaid_invoice_company_fk'
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'Sangpo_Company'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unpaid_invoice_company_fk'
   ) THEN
     ALTER TABLE public."Sangpo_Unpaid_Invoice"
       ADD CONSTRAINT unpaid_invoice_company_fk
@@ -30,9 +39,13 @@ END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'unpaid_invoice_supplier_fk'
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'Sangpo_Supplier'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unpaid_invoice_supplier_fk'
   ) THEN
     ALTER TABLE public."Sangpo_Unpaid_Invoice"
       ADD CONSTRAINT unpaid_invoice_supplier_fk
@@ -40,8 +53,3 @@ BEGIN
       ON DELETE CASCADE;
   END IF;
 END $$;
-
-CREATE INDEX IF NOT EXISTS unpaid_invoice_company_idx ON public."Sangpo_Unpaid_Invoice"(company_id);
-CREATE INDEX IF NOT EXISTS unpaid_invoice_supplier_idx ON public."Sangpo_Unpaid_Invoice"(supplier_id);
-CREATE INDEX IF NOT EXISTS unpaid_invoice_status_idx ON public."Sangpo_Unpaid_Invoice"(status);
-CREATE INDEX IF NOT EXISTS unpaid_invoice_invoice_number_idx ON public."Sangpo_Unpaid_Invoice"(invoice_number);
