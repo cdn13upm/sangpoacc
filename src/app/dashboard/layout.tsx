@@ -52,6 +52,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         ...(isAdmin ? [{ href: '/dashboard/documents', label: t('sidebar.documents') }] : []),
         { href: '/dashboard/payments', label: t('sidebar.payments') },
         { href: '/dashboard/certificates', label: t('sidebar.certificates') },
+        { href: '/dashboard/unpaid-invoices', label: t('sidebar.unpaidInvoices') },
       ];
 
   const roleLabel = sangpoUser?.role ? formatRoleLabel(sangpoUser.role) : t('role.user');
