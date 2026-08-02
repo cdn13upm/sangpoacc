@@ -220,9 +220,7 @@ export default async function PaymentsPage({
   const selectedVos = selectedSupplierId
     ? voRows.filter((item) => item.supplier_id === selectedSupplierId)
     : [];
-  const selectedUnpaidInvoices = selectedSupplierId
-    ? unpaidInvoiceRows.filter((item) => item.supplier_id === selectedSupplierId)
-    : unpaidInvoiceRows;
+  const selectedUnpaidInvoices = unpaidInvoiceRows;
 
   const awarded = safeNumber(selectedSupplier?.contract_award_value || 0);
   const approved = selectedMilestones.reduce(
