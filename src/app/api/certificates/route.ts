@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import {
+  getActiveProjectIdFromRequest,
+  resolveActiveProjectId,
+} from '@/lib/projects';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,7 +12,7 @@ const supabaseAdmin = createAdminClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-async function getAuthorizedUser() {
+async function getAuthorizedUser(request?: Request) {
   const supabase = createClient();
   const {
     data: { user },
@@ -32,21 +36,38 @@ async function getAuthorizedUser() {
     return { error: 'No company assigned to this user', status: 400 as const };
   }
 
-  return { userId: user.id, role: sangpoUser.role, companyId: sangpoUser.company_id };
+  const overrideProjectId = request ? getActiveProjectIdFromRequest(request) : null;
+  const projectId = await resolveActiveProjectId(
+    supabaseAdmin,
+    sangpoUser.company_id,
+    overrideProjectId
+  );
+
+  return {
+    userId: user.id,
+    role: sangpoUser.role,
+    companyId: sangpoUser.company_id,
+    projectId,
+  };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('Sangpo_Certificate')
       .select('*, Sangpo_Supplier(name), Sangpo_Milestone(title)')
-      .eq('company_id', authorization.companyId)
-      .order('created_at', { ascending: false });
+      .eq('company_id', authorization.companyId);
+
+    if (authorization.projectId) {
+      query = query.eq('project_id', authorization.projectId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -60,7 +81,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
@@ -80,16 +101,46 @@ export async function POST(request: Request) {
       certified_amount,
       approval_status,
       approval_remark,
+      project_id,
     } = body;
 
     if (!supplier_id || !certificate_number?.trim() || !certificate_date) {
       return NextResponse.json({ error: 'Supplier, certificate number, and date are required' }, { status: 400 });
     }
 
+    const resolvedProjectId = project_id || authorization.projectId;
+
+    let finalProjectId: string | null | undefined = resolvedProjectId;
+
+    if (supplier_id) {
+      const { data: supplierRow, error: supplierError } = await supabaseAdmin
+        .from('Sangpo_Supplier')
+        .select('id, project_id')
+        .eq('id', supplier_id)
+        .eq('company_id', authorization.companyId)
+        .maybeSingle();
+
+      if (!supplierError && supplierRow?.project_id) {
+        finalProjectId = supplierRow.project_id;
+      }
+    } else if (milestone_id) {
+      const { data: milestoneRow, error: milestoneError } = await supabaseAdmin
+        .from('Sangpo_Milestone')
+        .select('id, project_id')
+        .eq('id', milestone_id)
+        .eq('company_id', authorization.companyId)
+        .maybeSingle();
+
+      if (!milestoneError && milestoneRow?.project_id) {
+        finalProjectId = milestoneRow.project_id;
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('Sangpo_Certificate')
       .insert({
         company_id: authorization.companyId,
+        project_id: finalProjectId || null,
         supplier_id,
         milestone_id: milestone_id || null,
         certificate_number: certificate_number.trim(),
@@ -117,7 +168,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
@@ -134,6 +185,7 @@ export async function PATCH(request: Request) {
       certified_amount,
       approval_status,
       approval_remark,
+      project_id,
     } = body;
 
     if (!id) {
@@ -144,7 +196,8 @@ export async function PATCH(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const canApprove = ['manager', 'company_director'].includes(authorization.role) && approval_status === 'approved';
+    const canApprove =
+      ['manager', 'company_director'].includes(authorization.role) && approval_status === 'approved';
 
     if (authorization.role !== 'admin' && !canApprove) {
       return NextResponse.json({ error: 'You are not allowed to update this certificate' }, { status: 403 });
@@ -172,7 +225,12 @@ export async function PATCH(request: Request) {
       updates.invoice_amount = Number(invoice_amount || 0);
       updates.certified_amount = Number(certified_amount || 0);
       updates.approval_status = approval_status || 'draft';
-      updates.approval_remark = typeof approval_remark === 'string' ? approval_remark.trim() || null : null;
+      updates.approval_remark =
+        typeof approval_remark === 'string' ? approval_remark.trim() || null : null;
+
+      if (project_id !== undefined) {
+        updates.project_id = project_id || null;
+      }
 
       if (approval_status === 'pending_approval') {
         updates.submitted_to_manager_at = new Date().toISOString();
@@ -231,7 +289,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }

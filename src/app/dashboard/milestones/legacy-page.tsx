@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getClientActiveProjectId } from '@/lib/projects';
 import {
   bodyCellStyle,
   fieldWrapStyle,
@@ -119,11 +120,15 @@ export default function LegacyMilestonesPage() {
         setUserRole(userRow?.role || null);
         if (!userRow?.company_id) return;
 
-        const { data: supplierRows } = await supabase
+        const activeProjectId = getClientActiveProjectId();
+        let supplierQuery = supabase
           .from('Sangpo_Supplier')
           .select('id, name, contract_award_value')
-          .eq('company_id', userRow.company_id)
-          .order('name');
+          .eq('company_id', userRow.company_id);
+        if (activeProjectId) {
+          supplierQuery = supplierQuery.eq('project_id', activeProjectId);
+        }
+        const { data: supplierRows } = await supplierQuery.order('name');
 
         setSuppliers((supplierRows || []) as SupplierOption[]);
         await reloadMilestones();

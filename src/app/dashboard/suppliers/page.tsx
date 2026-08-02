@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getClientActiveProjectId } from '@/lib/projects';
 import {
   bodyCellStyle,
   colors,
@@ -103,26 +104,10 @@ export default function SuppliersPage() {
 
   async function fetchSuppliers() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: sangpoUser } = await supabase
-        .from('Sangpo_User')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!sangpoUser?.company_id) return;
-
-      const { data } = await supabase
-        .from('Sangpo_Supplier')
-        .select('*')
-        .eq('company_id', sangpoUser.company_id)
-        .order('created_at', { ascending: false });
-
-      setSuppliers((data || []) as Supplier[]);
+      const response = await fetch('/api/suppliers');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to load suppliers');
+      setSuppliers((result.suppliers || []) as Supplier[]);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
     } finally {

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getClientActiveProjectId } from '@/lib/projects';
 import {
   bodyCellStyle,
   fieldWrapStyle,
@@ -105,9 +106,15 @@ export default function CertificatesPage() {
         setUserRole(userRow?.role || null);
         if (!userRow?.company_id) return;
 
+        const activeProjectId = getClientActiveProjectId();
+        let supplierQuery = supabase.from('Sangpo_Supplier').select('id, name').eq('company_id', userRow.company_id);
+        if (activeProjectId) supplierQuery = supplierQuery.eq('project_id', activeProjectId);
+        let milestoneQuery = supabase.from('Sangpo_Milestone').select('id, title, supplier_id').eq('company_id', userRow.company_id);
+        if (activeProjectId) milestoneQuery = milestoneQuery.eq('project_id', activeProjectId);
+
         const [supplierRows, milestoneRows, certificateResponse] = await Promise.all([
-          supabase.from('Sangpo_Supplier').select('id, name').eq('company_id', userRow.company_id).order('name'),
-          supabase.from('Sangpo_Milestone').select('id, title, supplier_id').eq('company_id', userRow.company_id).order('sort_order'),
+          supplierQuery.order('name'),
+          milestoneQuery.order('sort_order'),
           fetch('/api/certificates'),
         ]);
 

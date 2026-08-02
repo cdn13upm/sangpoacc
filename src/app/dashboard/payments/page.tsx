@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getActiveProjectId } from '@/lib/projects';
 import PaymentSupplierFilter from './supplier-filter';
 import PaymentPrintWrapper from './print-wrapper';
 import {
@@ -118,33 +119,49 @@ export default async function PaymentsPage({
     .single()) as { data: SangpoUser | null };
 
   const companyId = sangpoUser?.company_id;
+  const activeProjectId = getActiveProjectId();
 
   const [{ data: company }, { data: suppliers }, { data: milestones }, { data: variationOrders }] = await Promise.all([
     companyId
       ? supabase.from('Sangpo_Company').select('name').eq('id', companyId).maybeSingle()
       : Promise.resolve({ data: null }),
     companyId
-      ? supabase
-          .from('Sangpo_Supplier')
-          .select('id, name, contract_award_value, scope_of_work')
-          .eq('company_id', companyId)
-          .order('name', { ascending: true })
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Supplier')
+            .select('id, name, contract_award_value, scope_of_work')
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query.order('name', { ascending: true });
+        })()
       : Promise.resolve({ data: [] }),
     companyId
-      ? supabase
-          .from('Sangpo_Milestone')
-          .select(
-            'id, supplier_id, title, description, milestone_amount, approved_invoice_total, payment_date, payment_reference'
-          )
-          .eq('company_id', companyId)
-          .order('created_at', { ascending: false })
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Milestone')
+            .select(
+              'id, supplier_id, title, description, milestone_amount, approved_invoice_total, payment_date, payment_reference'
+            )
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query.order('created_at', { ascending: false });
+        })()
       : Promise.resolve({ data: [] }),
     companyId
-      ? supabase
-          .from('Sangpo_Variation_Order')
-          .select('id, supplier_id, vo_number, description, amount, payment_date, payment_reference, status')
-          .eq('company_id', companyId)
-          .order('created_at', { ascending: false })
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Variation_Order')
+            .select('id, supplier_id, vo_number, description, amount, payment_date, payment_reference, status')
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query.order('created_at', { ascending: false });
+        })()
       : Promise.resolve({ data: [] }),
   ]);
 

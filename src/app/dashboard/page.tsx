@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getActiveProjectId } from '@/lib/projects';
 import { getServerLanguage } from '@/lib/i18n/server';
 import { translate } from '@/lib/i18n/translations';
 import {
@@ -74,26 +75,52 @@ export default async function Dashboard() {
     .single() as { data: SangpoUser | null };
 
   const companyId = sangpoUser?.company_id;
+  const activeProjectId = getActiveProjectId();
 
   const [{ data: company }, { data: project }, { data: suppliers }, { data: milestones }, { data: variationOrders }] = await Promise.all([
     companyId
       ? supabase.from('Sangpo_Company').select('name').eq('id', companyId).maybeSingle()
       : Promise.resolve({ data: null }),
     companyId
-      ? supabase.from('Sangpo_Project').select('name, overall_budget').eq('company_id', companyId).limit(1).maybeSingle()
+      ? activeProjectId
+        ? supabase.from('Sangpo_Project').select('name, overall_budget').eq('company_id', companyId).eq('id', activeProjectId).maybeSingle()
+        : supabase.from('Sangpo_Project').select('name, overall_budget').eq('company_id', companyId).limit(1).maybeSingle()
       : Promise.resolve({ data: null }),
     companyId
-      ? supabase
-          .from('Sangpo_Supplier')
-          .select('id, name, contract_award_value, scope_of_work')
-          .eq('company_id', companyId)
-          .order('name', { ascending: true })
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Supplier')
+            .select('id, name, contract_award_value, scope_of_work')
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query.order('name', { ascending: true });
+        })()
       : Promise.resolve({ data: [] }),
     companyId
-      ? supabase.from('Sangpo_Milestone').select('supplier_id, approved_invoice_total').eq('company_id', companyId)
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Milestone')
+            .select('supplier_id, approved_invoice_total')
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query;
+        })()
       : Promise.resolve({ data: [] }),
     companyId
-      ? supabase.from('Sangpo_Variation_Order').select('supplier_id, amount, status').eq('company_id', companyId)
+      ? (() => {
+          let query = supabase
+            .from('Sangpo_Variation_Order')
+            .select('supplier_id, amount, status')
+            .eq('company_id', companyId);
+          if (activeProjectId) {
+            query = query.eq('project_id', activeProjectId);
+          }
+          return query;
+        })()
       : Promise.resolve({ data: [] }),
   ]);
 

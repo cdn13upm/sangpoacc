@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import {
+  getActiveProjectIdFromRequest,
+  resolveActiveProjectId,
+} from '@/lib/projects';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,7 +12,7 @@ const supabaseAdmin = createAdminClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-async function getAuthorizedUser() {
+async function getAuthorizedUser(request?: Request) {
   const supabase = createClient();
   const {
     data: { user },
@@ -32,20 +36,37 @@ async function getAuthorizedUser() {
     return { error: 'No company assigned to this user', status: 400 as const };
   }
 
-  return { role: sangpoUser.role, companyId: sangpoUser.company_id };
+  const overrideProjectId = request ? getActiveProjectIdFromRequest(request) : null;
+  const projectId = await resolveActiveProjectId(
+    supabaseAdmin,
+    sangpoUser.company_id,
+    overrideProjectId
+  );
+
+  return {
+    role: sangpoUser.role,
+    companyId: sangpoUser.company_id,
+    projectId,
+  };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('Sangpo_Milestone')
       .select('*, Sangpo_Supplier(name, contract_award_value)')
-      .eq('company_id', authorization.companyId)
+      .eq('company_id', authorization.companyId);
+
+    if (authorization.projectId) {
+      query = query.eq('project_id', authorization.projectId);
+    }
+
+    const { data, error } = await query
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -61,7 +82,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
@@ -81,16 +102,33 @@ export async function POST(request: Request) {
       payment_reference,
       sort_order,
       status,
+      project_id,
     } = body;
 
     if (!supplier_id || !title?.trim()) {
       return NextResponse.json({ error: 'Supplier and milestone title are required' }, { status: 400 });
     }
 
+    const resolvedProjectId = project_id || authorization.projectId;
+
+    const { data: supplierRow, error: supplierError } = await supabaseAdmin
+      .from('Sangpo_Supplier')
+      .select('id, project_id')
+      .eq('id', supplier_id)
+      .eq('company_id', authorization.companyId)
+      .maybeSingle();
+
+    if (supplierError) {
+      return NextResponse.json({ error: supplierError.message }, { status: 400 });
+    }
+
+    const finalProjectId = supplierRow?.project_id || resolvedProjectId;
+
     const { data, error } = await supabaseAdmin
       .from('Sangpo_Milestone')
       .insert({
         company_id: authorization.companyId,
+        project_id: finalProjectId || null,
         supplier_id,
         title: title.trim(),
         description: description?.trim() || null,
@@ -116,7 +154,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
@@ -137,26 +175,33 @@ export async function PATCH(request: Request) {
       payment_reference,
       sort_order,
       status,
+      project_id,
     } = body;
 
     if (!id || !supplier_id || !title?.trim()) {
       return NextResponse.json({ error: 'Milestone id, supplier, and title are required' }, { status: 400 });
     }
 
+    const updates: Record<string, unknown> = {
+      supplier_id,
+      title: title.trim(),
+      description: description?.trim() || null,
+      milestone_amount: Number(milestone_amount || 0),
+      approved_invoice_total: Number(approved_invoice_total || 0),
+      payment_date: payment_date || null,
+      payment_reference: payment_reference?.trim() || null,
+      sort_order: Number(sort_order || 0),
+      status: status || 'draft',
+      updated_at: new Date().toISOString(),
+    };
+
+    if (project_id !== undefined) {
+      updates.project_id = project_id || null;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('Sangpo_Milestone')
-      .update({
-        supplier_id,
-        title: title.trim(),
-        description: description?.trim() || null,
-        milestone_amount: Number(milestone_amount || 0),
-        approved_invoice_total: Number(approved_invoice_total || 0),
-        payment_date: payment_date || null,
-        payment_reference: payment_reference?.trim() || null,
-        sort_order: Number(sort_order || 0),
-        status: status || 'draft',
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', id)
       .eq('company_id', authorization.companyId)
       .select('*')
@@ -174,7 +219,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }

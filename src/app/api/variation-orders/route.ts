@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import {
+  getActiveProjectIdFromRequest,
+  resolveActiveProjectId,
+} from '@/lib/projects';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,7 +12,7 @@ const supabaseAdmin = createAdminClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-async function getAuthorizedUser() {
+async function getAuthorizedUser(request?: Request) {
   const supabase = createClient();
   const {
     data: { user },
@@ -32,21 +36,37 @@ async function getAuthorizedUser() {
     return { error: 'No company assigned to this user', status: 400 as const };
   }
 
-  return { role: sangpoUser.role, companyId: sangpoUser.company_id };
+  const overrideProjectId = request ? getActiveProjectIdFromRequest(request) : null;
+  const projectId = await resolveActiveProjectId(
+    supabaseAdmin,
+    sangpoUser.company_id,
+    overrideProjectId
+  );
+
+  return {
+    role: sangpoUser.role,
+    companyId: sangpoUser.company_id,
+    projectId,
+  };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('Sangpo_Variation_Order')
       .select('*, Sangpo_Supplier(name)')
-      .eq('company_id', authorization.companyId)
-      .order('created_at', { ascending: false });
+      .eq('company_id', authorization.companyId);
+
+    if (authorization.projectId) {
+      query = query.eq('project_id', authorization.projectId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -60,7 +80,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
@@ -70,16 +90,42 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { supplier_id, milestone_id, vo_number, description, amount, status, payment_date, payment_reference } = body;
+    const {
+      supplier_id,
+      milestone_id,
+      vo_number,
+      description,
+      amount,
+      status,
+      payment_date,
+      payment_reference,
+      project_id,
+    } = body;
 
     if (!supplier_id || !vo_number?.trim()) {
       return NextResponse.json({ error: 'Supplier and VO number are required' }, { status: 400 });
     }
 
+    const resolvedProjectId = project_id || authorization.projectId;
+
+    const { data: supplierRow, error: supplierError } = await supabaseAdmin
+      .from('Sangpo_Supplier')
+      .select('id, project_id')
+      .eq('id', supplier_id)
+      .eq('company_id', authorization.companyId)
+      .maybeSingle();
+
+    if (supplierError) {
+      return NextResponse.json({ error: supplierError.message }, { status: 400 });
+    }
+
+    const finalProjectId = supplierRow?.project_id || resolvedProjectId;
+
     const { data, error } = await supabaseAdmin
       .from('Sangpo_Variation_Order')
       .insert({
         company_id: authorization.companyId,
+        project_id: finalProjectId || null,
         supplier_id,
         milestone_id: milestone_id || null,
         vo_number: vo_number.trim(),
@@ -104,7 +150,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }
@@ -114,25 +160,42 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, supplier_id, milestone_id, vo_number, description, amount, status, payment_date, payment_reference } = body;
+    const {
+      id,
+      supplier_id,
+      milestone_id,
+      vo_number,
+      description,
+      amount,
+      status,
+      payment_date,
+      payment_reference,
+      project_id,
+    } = body;
 
     if (!id || !supplier_id || !vo_number?.trim()) {
       return NextResponse.json({ error: 'VO id, supplier, and VO number are required' }, { status: 400 });
     }
 
+    const updates: Record<string, unknown> = {
+      supplier_id,
+      milestone_id: milestone_id || null,
+      vo_number: vo_number.trim(),
+      description: description?.trim() || null,
+      amount: Number(amount || 0),
+      status: status || 'draft',
+      payment_date: payment_date || null,
+      payment_reference: payment_reference?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (project_id !== undefined) {
+      updates.project_id = project_id || null;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('Sangpo_Variation_Order')
-      .update({
-        supplier_id,
-        milestone_id: milestone_id || null,
-        vo_number: vo_number.trim(),
-        description: description?.trim() || null,
-        amount: Number(amount || 0),
-        status: status || 'draft',
-        payment_date: payment_date || null,
-        payment_reference: payment_reference?.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', id)
       .eq('company_id', authorization.companyId)
       .select('*')
@@ -150,7 +213,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const authorization = await getAuthorizedUser();
+    const authorization = await getAuthorizedUser(request);
     if ('error' in authorization) {
       return NextResponse.json({ error: authorization.error }, { status: authorization.status });
     }

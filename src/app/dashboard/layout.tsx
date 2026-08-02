@@ -6,6 +6,7 @@ import { translate } from '@/lib/i18n/translations';
 import { isViewerRole } from '@/lib/roles';
 import LanguageToggle from '../language-toggle';
 import DashboardNavLink from './nav-link';
+import ProjectSelector from './project-selector';
 import { colors, contentWrapStyle } from './ui';
 
 type SangpoUser = {
@@ -140,6 +141,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       </aside>
 
       <main style={{ flex: 1, padding: '2rem 1.6rem 2.6rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: '1rem',
+            marginBottom: '1rem',
+            maxWidth: '100%',
+          }}
+        >
+          <ProjectSelector />
+        </div>
         <div style={contentWrapStyle}>
           {children}
         </div>
